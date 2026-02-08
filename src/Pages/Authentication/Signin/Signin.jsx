@@ -15,21 +15,21 @@ const Signin = () => {
     const form = location.state?.from || "/";
 
     const onSubmit = async (data) => {
-        console.log(data);
+        (data);
         setSigninError("");
 
         try {
             const result = await signInUser(data.email, data.password);
             const user = result.user;
-            console.log("User created:", user)
+            ("User created:", user)
             navigate(form);
-            console.log("Signin location state:", location.state);
-            console.log("Redirecting to:", form);
+            ("Signin location state:", location.state);
+            ("Redirecting to:", form);
             // Optional: Add user display name
             // await updateProfile(user, { displayName: data.name });
 
         } catch (error) {
-            console.log("Error:", error.message);
+            ("Error:", error.message);
             setSigninError(error.message);
         }
     };

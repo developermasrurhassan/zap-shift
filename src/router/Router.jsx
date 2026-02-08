@@ -11,7 +11,12 @@ import SendParcel from "../Pages/SendPercel/SendParcel";
 import PrivateRoutes from "./Routes/PrivateRoutes";
 import DashboardLayout from "../layout/MainLayout/DashboardLayout";
 import MyParcel from "../Pages/Dashboard/MyParcel/MyParcel";
+import PaymentForm from "../Pages/Dashboard/Payment/PaymentForm";
 import Payment from "../Pages/Dashboard/Payment/Payment";
+import PaymentHistory from "../Pages/Dashboard/PaymentHistory/PaymentHistory";
+import PendingRiders from "../Pages/Dashboard/Riders/PendingRiders";
+import RiderForm from "../Pages/Dashboard/Riders/RiderForm";
+
 
 export const router = createBrowserRouter([
 
@@ -28,8 +33,10 @@ export const router = createBrowserRouter([
             },
             {
                 path: 'send-parcel', element: <PrivateRoutes><SendParcel /></PrivateRoutes>
-            }
-            // { path: "about", Component: About },
+            },
+
+            //  { path: "about", Component: About },
+
 
             // {
             //     path: "concerts",
@@ -53,13 +60,21 @@ export const router = createBrowserRouter([
             { path: "signup", Component: Signup },
         ],
     },
+
     {
         path: 'dashboard',
         element: <PrivateRoutes><DashboardLayout /></PrivateRoutes>,
         children: [
             { path: 'my-parcel', Component: MyParcel },
-            // Add this route
-            { path: "payment/:id", Component: Payment }
+            { path: 'payment-history', Component: PaymentHistory },
+            { path: "payment/:parcelId", Component: Payment },
+            { path: "become-rider", Component: RiderForm },
+            { path: "pending-rider", Component: PendingRiders },
+
+            // Add rider routes here:
+            // Add this
+            // { path: 'rider/active', Component: ActiveRiders },
+            // { path: 'rider/inactive', Component: InactiveRiders },
         ]
     }
 ]);

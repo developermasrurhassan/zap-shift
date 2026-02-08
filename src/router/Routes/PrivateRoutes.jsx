@@ -5,7 +5,7 @@ import Loading from '../../Pages/ErrorPage/Loading';
 const PrivateRoutes = ({ children }) => {
     const { user, loading } = useAuth();
     const location = useLocation();
-    console.log(location);
+    (location);
 
     if (loading) {
         return <Loading></Loading>

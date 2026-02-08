@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion, AnimatePresence } from 'motion/react';
-import { useNavigate } from 'react-router'; // ADD THIS IMPORT
+import { useNavigate } from 'react-router'; // FIXED IMPORT
 import {
     FaTruck,
     FaBox,
@@ -20,7 +20,6 @@ import {
     FaShieldAlt,
     FaCreditCard,
     FaCheckCircle,
-    FaMailBulk,
     FaEnvelope
 } from 'react-icons/fa';
 import { districts } from './DistrictData';
@@ -36,7 +35,7 @@ const SendParcel = () => {
     const [submittedData, setSubmittedData] = useState(null);
     const { user } = useAuth();
     const axiosSecure = UseAxiosSecure();
-    const navigate = useNavigate(); // ADD THIS
+    const navigate = useNavigate();
 
     // React Hook Form setup
     const {
@@ -73,10 +72,8 @@ const SendParcel = () => {
     });
 
     // Watch specific form values
-    const watchParcelType = watch('parcelType');
-    const watchSenderDistrict = watch('senderDistrict');
-    const watchReceiverDistrict = watch('receiverDistrict');
     const watchWeight = watch('weight');
+    const watchReceiverDistrict = watch('receiverDistrict');
     const watchInsurance = watch('insurance');
 
     // SweetAlert helper functions
@@ -100,18 +97,7 @@ const SendParcel = () => {
         });
     };
 
-    const showConfirmAlert = (title, text) => {
-        return Swal.fire({
-            title: title,
-            text: text,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Yes',
-            cancelButtonText: 'No',
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33'
-        });
-    };
+    // REMOVED: showConfirmAlert function since we're using Swal.fire directly
 
     // Pricing & Delivery Logic
     const isDhakaDistrict = (district) => {
@@ -184,7 +170,145 @@ const SendParcel = () => {
             });
     };
 
-    // Reset form functions (keep as is)
+    // FIXED: Reset Form Functions
+    const resetWithSameSender = () => {
+        // Reset to step 1
+        setCurrentStep(1);
+        setSubmittedData(null);
+        setIsSameAsSender(false);
+
+        // Clear ONLY these fields:
+        // 1. Parcel details
+        setValue('parcelName', '');
+        setValue('weight', '');
+        setParcelType('document');
+        setValue('parcelType', 'document');
+
+        // 2. Receiver details
+        setValue('receiverName', '');
+        setValue('receiverPhone', '');
+        setValue('receiverEmail', '');
+        setValue('receiverAddress', '');
+        setValue('receiverDistrict', '');
+        setValue('receiverDeliveryLocation', '');
+        setValue('receiverInstructions', '');
+
+        // 3. Additional options
+        setValue('insurance', false);
+        setValue('paymentMethod', 'cash');
+
+        // Show success alert
+        Swal.fire({
+            title: 'Ready! 🎯',
+            html: `
+            <div class="text-center">
+                <div class="text-4xl mb-3">📦</div>
+                <p class="font-semibold">Your sender information is saved!</p>
+                <p class="text-sm mt-2">Enter new parcel details for another receiver.</p>
+            </div>
+        `,
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    };
+
+    const resetEverything = () => {
+        // Reset to step 1
+        setCurrentStep(1);
+        setSubmittedData(null);
+        setIsSameAsSender(false);
+
+        // Clear EVERYTHING - all form fields
+        // 1. Parcel details
+        setParcelType('document');
+        setValue('parcelType', 'document');
+        setValue('parcelName', '');
+        setValue('weight', '');
+
+        // 2. Sender details (everything gets cleared)
+        setValue('senderName', '');
+        setValue('senderPhone', '');
+        setValue('senderEmail', '');
+        setValue('senderAddress', '');
+        setValue('senderDistrict', '');
+        setValue('senderPickupLocation', '');
+        setValue('senderInstructions', '');
+
+        // 3. Receiver details
+        setValue('receiverName', '');
+        setValue('receiverPhone', '');
+        setValue('receiverEmail', '');
+        setValue('receiverAddress', '');
+        setValue('receiverDistrict', '');
+        setValue('receiverDeliveryLocation', '');
+        setValue('receiverInstructions', '');
+
+        // 4. Delivery schedule
+        setValue('deliveryDate', '');
+        setValue('deliveryTime', '');
+
+        // 5. Additional options
+        setValue('insurance', false);
+        setValue('paymentMethod', 'cash');
+
+        // Show success alert
+        Swal.fire({
+            title: 'Form Reset!',
+            text: 'All form data has been cleared. Start fresh!',
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    };
+
+    // FIXED: Reset Form Function
+    const resetForm = () => {
+        Swal.fire({
+            title: 'Send Another Parcel?',
+            html: `
+            <div class="text-left">
+                <p class="mb-3">How would you like to proceed?</p>
+                
+                <div class="space-y-3">
+                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition" id="keepSenderOption">
+                        <p class="font-semibold text-blue-700">📦 Keep My Sender Info</p>
+                        <p class="text-sm text-gray-600 mt-1">
+                            Clear only receiver details. Perfect for sending to multiple people!
+                        </p>
+                    </div>
+                    
+                    <div class="p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition" id="resetAllOption">
+                        <p class="font-semibold text-gray-700">🔄 Start Fresh</p>
+                        <p class="text-sm text-gray-600 mt-1">
+                            Clear all form data including your sender information.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `,
+            showCancelButton: true,
+            confirmButtonText: 'Cancel',
+            cancelButtonText: ' ',
+            confirmButtonColor: '#6b7280',
+            cancelButtonColor: 'transparent',
+            showCloseButton: true,
+            allowEscapeKey: true,
+            allowOutsideClick: true,
+            didOpen: () => {
+                // Add click handlers to the options
+                document.getElementById('keepSenderOption').addEventListener('click', () => {
+                    Swal.close();
+                    resetWithSameSender();
+                });
+
+                document.getElementById('resetAllOption').addEventListener('click', () => {
+                    Swal.close();
+                    resetEverything();
+                });
+            }
+        });
+    };
 
     // API Functions
     const submitParcelData = async (data) => {
@@ -198,6 +322,7 @@ const SendParcel = () => {
                 }
             });
 
+            // In both submitParcelData AND handleOnlinePayment functions:
             const finalData = {
                 ...data,
                 price: calculatePrice(),
@@ -205,7 +330,8 @@ const SendParcel = () => {
                 status: 'pending',
                 submittedAt: new Date().toISOString(),
                 userId: user?.uid || 'anonymous',
-                userEmail: user?.email || 'anonymous'
+                userEmail: user?.email || 'anonymous',
+                senderEmail: user?.email // ← ALWAYS use logged-in user's email
             };
 
             const response = await axiosSecure.post('/parcels', finalData);
@@ -215,7 +341,7 @@ const SendParcel = () => {
                 setCurrentStep(4);
                 loadingAlert.close();
                 showSuccessAlert('Success!', 'Parcel request submitted successfully.');
-                console.log('✅ Parcel submitted successfully:', response.data);
+                ('✅ Parcel submitted successfully:', response.data);
             } else {
                 throw new Error(response.data.error || 'Failed to submit parcel');
             }
@@ -229,6 +355,14 @@ const SendParcel = () => {
             });
         }
     };
+
+    useEffect(() => {
+        if (user?.email) {
+            // Auto-fill sender email with logged in user's email
+            setValue('senderEmail', user.email);
+            console.log('✅ Auto-filled sender email:', user.email);
+        }
+    }, [user, setValue]);
 
     // UPDATED handleOnlinePayment function
     const handleOnlinePayment = async (data) => {
@@ -263,7 +397,8 @@ const SendParcel = () => {
                     paymentMethod: paymentMethod,
                     submittedAt: new Date().toISOString(),
                     userId: user?.uid || 'anonymous',
-                    userEmail: user?.email || 'anonymous'
+                    userEmail: user?.email || 'anonymous',
+                    senderEmail: user?.email || data.senderEmail // ADD THIS LINE
                 };
 
                 const response = await axiosSecure.post('/parcels', finalData);
@@ -271,62 +406,71 @@ const SendParcel = () => {
                 if (response.data.success) {
                     loadingAlert.close();
 
+                    // FIX: Use the correct response structure
+                    const parcelId = response.data.data?._id || response.data.parcelId;
+                    const trackingId = response.data.data?.trackingId || response.data.trackingId;
+
+                    // Ensure we have a valid parcel ID
+                    if (!parcelId) {
+                        throw new Error('Parcel ID not returned from server');
+                    }
+
                     const paymentResult = await Swal.fire({
                         title: 'Complete Your Payment',
                         html: `
-                        <div class="text-left">
-                            <div class="mb-4 p-3 bg-blue-50 rounded-lg">
-                                <p class="font-semibold">Payment Summary</p>
-                                <div class="mt-2 space-y-1 text-sm">
-                                    <div class="flex justify-between">
-                                        <span>Tracking ID:</span>
-                                        <span class="font-semibold font-mono">${finalData.trackingId}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span>Payment Method:</span>
-                                        <span class="font-semibold">${methodLabels[paymentMethod] || paymentMethod}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span>Amount:</span>
-                                        <span class="font-bold text-lg">৳${paymentAmount}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="mt-4">
-                                <p class="text-sm text-gray-600 mb-3">Choose how you want to proceed:</p>
-                                
-                                <div class="space-y-3">
-                                    <div class="p-3 border border-green-300 bg-green-50 rounded-lg cursor-pointer hover:bg-green-100 transition" id="payNowOption">
-                                        <p class="font-semibold text-green-700 flex items-center gap-2">
-                                            <span class="text-xl">💳</span> Pay Now
-                                        </p>
-                                        <p class="text-sm text-gray-600 mt-1">
-                                            Complete payment now to confirm your booking
-                                        </p>
-                                    </div>
-                                    
-                                    <div class="p-3 border border-yellow-300 bg-yellow-50 rounded-lg cursor-pointer hover:bg-yellow-100 transition" id="payLaterOption">
-                                        <p class="font-semibold text-yellow-700 flex items-center gap-2">
-                                            <span class="text-xl">⏰</span> Pay on Pickup
-                                        </p>
-                                        <p class="text-sm text-gray-600 mt-1">
-                                            Submit parcel now, pay when pickup agent arrives
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="mt-4 p-2 bg-gray-50 rounded text-xs text-gray-500">
-                                <p>💡 <strong>Tip:</strong> Pay now to confirm your booking instantly!</p>
-                            </div>
-                        </div>
-                    `,
+            <div class="text-left">
+              <div class="mb-4 p-3 bg-blue-50 rounded-lg">
+                <p class="font-semibold">Payment Summary</p>
+                <div class="mt-2 space-y-1 text-sm">
+                  <div class="flex justify-between">
+                    <span>Tracking ID:</span>
+                    <span class="font-semibold font-mono">${trackingId}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Payment Method:</span>
+                    <span class="font-semibold">${methodLabels[paymentMethod] || paymentMethod}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Amount:</span>
+                    <span class="font-bold text-lg">৳${paymentAmount}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mt-4">
+                <p class="text-sm text-gray-600 mb-3">Choose how you want to proceed:</p>
+                
+                <div class="space-y-3">
+                  <div class="p-3 border border-green-300 bg-green-50 rounded-lg cursor-pointer hover:bg-green-100 transition" id="payNowOption">
+                    <p class="font-semibold text-green-700 flex items-center gap-2">
+                      <span class="text-xl">💳</span> Pay Now
+                    </p>
+                    <p class="text-sm text-gray-600 mt-1">
+                      Complete payment now to confirm your booking
+                    </p>
+                  </div>
+                  
+                  <div class="p-3 border border-yellow-300 bg-yellow-50 rounded-lg cursor-pointer hover:bg-yellow-100 transition" id="payLaterOption">
+                    <p class="font-semibold text-yellow-700 flex items-center gap-2">
+                      <span class="text-xl">⏰</span> Pay on Pickup
+                    </p>
+                    <p class="text-sm text-gray-600 mt-1">
+                      Submit parcel now, pay when pickup agent arrives
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mt-4 p-2 bg-gray-50 rounded text-xs text-gray-500">
+                <p>💡 <strong>Tip:</strong> Pay now to confirm your booking instantly!</p>
+              </div>
+            </div>
+          `,
                         showCancelButton: true,
-                        confirmButtonText: 'Continue',
-                        cancelButtonText: 'Cancel',
+                        confirmButtonText: 'Pay Now',
+                        cancelButtonText: 'Pay Later',
                         confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#6b7280',
+                        cancelButtonColor: '#f59e0b',
                         showCloseButton: true,
                         allowEscapeKey: true,
                         allowOutsideClick: false,
@@ -342,50 +486,89 @@ const SendParcel = () => {
                     });
 
                     if (paymentResult.dismiss === Swal.DismissReason.cancel) {
-                        await axiosSecure.delete(`/parcels/${response.data.data._id}`);
-                        Swal.fire('Cancelled', 'Parcel creation cancelled.', 'info');
-                        return;
-                    }
+                        // User chose "Pay Later"
+                        await axiosSecure.patch(`/parcels/${parcelId}/payment`, {
+                            email: user?.email,
+                            paymentMethod: 'cash',
+                            paymentStatus: 'pending'
+                        });
 
-                    if (paymentResult.isConfirmed) {
+                        setSubmittedData(response.data.data || finalData);
+                        setCurrentStep(4);
+
+                        Swal.fire({
+                            title: 'Parcel Scheduled! ⏰',
+                            html: `
+              <div class="text-center">
+                <div class="text-5xl mb-4">📦</div>
+                <p class="font-semibold text-lg">Pay When Pickup Agent Arrives</p>
+                <p class="mt-2 text-sm">Our agent will collect payment during pickup.</p>
+                
+                <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <p class="font-semibold">Payment Instructions:</p>
+                  <p class="text-sm mt-1">Have ৳${paymentAmount} ready in cash or mobile banking</p>
+                </div>
+                
+                <div class="mt-4">
+                  <div class="font-mono font-bold text-primary">${trackingId}</div>
+                  <p class="text-xs text-gray-500">Tracking ID</p>
+                </div>
+              </div>
+            `,
+                            icon: 'success',
+                            confirmButtonText: 'Got It!'
+                        });
+                    } else if (paymentResult.isConfirmed) {
                         if (paymentResult.isPayNow) {
-                            // Redirect to payment page
-                            navigate(`/payment/${response.data.data._id}`, {
+                            // Ensure we have the parcel data
+                            const parcelData = response.data.data || finalData;
+
+                            console.log('🚀 Redirecting to payment page:', {
+                                parcelId: parcelId,
+                                amount: paymentAmount,
+                                trackingId: trackingId,
+                                email: user?.email
+                            })
+
+                            // CORRECTED: Added semicolon and better error handling
+                            navigate(`/dashboard/payment/${parcelId}`, {
                                 state: {
-                                    parcel: response.data.data,
+                                    parcel: parcelData,
                                     amount: paymentAmount,
-                                    trackingId: finalData.trackingId
+                                    trackingId: trackingId,
+                                    email: user?.email
                                 }
                             });
                         } else {
-                            // Mark as pay on pickup
-                            await axiosSecure.patch(`/parcels/${response.data.data._id}/payment`, {
+                            // User chose "Pay Later" from confirm button
+                            await axiosSecure.patch(`/parcels/${parcelId}/payment`, {
+                                email: user?.email,
                                 paymentMethod: 'cash',
                                 paymentStatus: 'pending'
                             });
 
-                            setSubmittedData(finalData);
+                            setSubmittedData(response.data.data || finalData);
                             setCurrentStep(4);
 
                             Swal.fire({
                                 title: 'Parcel Scheduled! ⏰',
                                 html: `
-                                <div class="text-center">
-                                    <div class="text-5xl mb-4">📦</div>
-                                    <p class="font-semibold text-lg">Pay When Pickup Agent Arrives</p>
-                                    <p class="mt-2 text-sm">Our agent will collect payment during pickup.</p>
-                                    
-                                    <div class="mt-4 p-3 bg-blue-50 rounded-lg">
-                                        <p class="font-semibold">Payment Instructions:</p>
-                                        <p class="text-sm mt-1">Have ৳${paymentAmount} ready in cash or mobile banking</p>
-                                    </div>
-                                    
-                                    <div class="mt-4">
-                                        <div class="font-mono font-bold text-primary">${finalData.trackingId}</div>
-                                        <p class="text-xs text-gray-500">Tracking ID</p>
-                                    </div>
-                                </div>
-                            `,
+                <div class="text-center">
+                  <div class="text-5xl mb-4">📦</div>
+                  <p class="font-semibold text-lg">Pay When Pickup Agent Arrives</p>
+                  <p class="mt-2 text-sm">Our agent will collect payment during pickup.</p>
+                  
+                  <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <p class="font-semibold">Payment Instructions:</p>
+                    <p class="text-sm mt-1">Have ৳${paymentAmount} ready in cash or mobile banking</p>
+                  </div>
+                  
+                  <div class="mt-4">
+                    <div class="font-mono font-bold text-primary">${trackingId}</div>
+                    <p class="text-xs text-gray-500">Tracking ID</p>
+                  </div>
+                </div>
+              `,
                                 icon: 'success',
                                 confirmButtonText: 'Got It!'
                             });
@@ -410,8 +593,9 @@ const SendParcel = () => {
         }
     };
 
+
     const onSubmit = async (data) => {
-        console.log('📦 Parcel Data:', data);
+        ('📦 Parcel Data:', data);
         const paymentMethod = data.paymentMethod;
 
         if (paymentMethod === 'cash') {
@@ -489,9 +673,7 @@ const SendParcel = () => {
         }
     };
 
-    // The rest of your JSX remains the same...
-    // [Keep all the JSX from your original code - it's correct]
-
+    // The JSX remains mostly the same, but fix the onclick={resetform} to onclick={resetForm}
     return (
         <div className="min-h-screen bg-linear-to-br from-base-100 to-base-200 p-4 md:p-6">
             <div className="max-w-6xl mx-auto">
@@ -794,10 +976,7 @@ const SendParcel = () => {
                                                             </span>
                                                         </label>
                                                     )}
-
-
                                                 </div>
-
 
                                                 {/* sender email */}
                                                 <div className="form-control ">
@@ -817,9 +996,8 @@ const SendParcel = () => {
                                                                 message: 'Must be include a valid email'
                                                             }
                                                         })}
-                                                        className={`input input-bordered  w-full ${errors.senderPhone ? 'input-error' : ''}`}
+                                                        className={`input input-bordered w-full ${errors.senderEmail ? 'input-error' : ''}`}
                                                         placeholder="example@gmail.com"
-
                                                     />
                                                     {errors.senderEmail && (
                                                         <label className="label">
@@ -856,7 +1034,7 @@ const SendParcel = () => {
                                                     )}
                                                 </div>
 
-                                                {/* Sender District - FIXED DUPLICATE KEYS */}
+                                                {/* Sender District */}
                                                 <div className="form-control">
                                                     <label className="label">
                                                         <span className="label-text font-semibold flex items-center gap-2">
@@ -872,7 +1050,6 @@ const SendParcel = () => {
                                                     >
                                                         <option value="">Select District</option>
                                                         {districts.map((district, index) => (
-                                                            // Using index to ensure unique keys
                                                             <option key={`sender-district-${index}`} value={district}>
                                                                 {district}
                                                             </option>
@@ -1092,9 +1269,8 @@ const SendParcel = () => {
                                                                 message: 'Must be include a valid email'
                                                             }
                                                         })}
-                                                        className={`input input-bordered  w-full ${errors.receiverPhone ? 'input-error' : ''}`}
+                                                        className={`input input-bordered w-full ${errors.receiverEmail ? 'input-error' : ''}`}
                                                         placeholder="example@gmail.com"
-
                                                     />
                                                     {errors.receiverEmail && (
                                                         <label className="label">
@@ -1131,7 +1307,7 @@ const SendParcel = () => {
                                                     )}
                                                 </div>
 
-                                                {/* Receiver District - FIXED DUPLICATE KEYS */}
+                                                {/* Receiver District */}
                                                 <div className="form-control">
                                                     <label className="label">
                                                         <span className="label-text font-semibold flex items-center gap-2">
@@ -1147,7 +1323,6 @@ const SendParcel = () => {
                                                     >
                                                         <option value="">Select District</option>
                                                         {districts.map((district, index) => (
-                                                            // Using index to ensure unique keys
                                                             <option key={`receiver-district-${index}`} value={district}>
                                                                 {district}
                                                             </option>
@@ -1424,6 +1599,7 @@ const SendParcel = () => {
                                     <button className="btn btn-primary text-black">
                                         Track This Parcel
                                     </button>
+                                    {/* FIXED: Changed onclick to onClick */}
                                     <button
                                         onClick={resetForm}
                                         className="btn btn-ghost"
@@ -1437,6 +1613,7 @@ const SendParcel = () => {
                 </motion.div>
 
                 {/* Features Section */}
+                {/* Features Section */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1445,24 +1622,24 @@ const SendParcel = () => {
                 >
                     {[
                         {
-                            icon: FaShieldAlt,
+                            Icon: FaShieldAlt,
                             title: 'Safe & Secure',
                             desc: 'All parcels are insured and tracked'
                         },
                         {
-                            icon: FaClock,
+                            Icon: FaClock,
                             title: 'Fast Delivery',
                             desc: 'Same-day pickup & next-day delivery'
                         },
                         {
-                            icon: FaTruck,
+                            Icon: FaTruck,
                             title: 'Nationwide Coverage',
                             desc: 'Service available in all 64 districts'
                         }
                     ].map((feature, index) => (
                         <div key={index} className="card bg-base-100 border border-base-300">
                             <div className="card-body items-center text-center">
-                                <feature.icon className="text-3xl text-primary mb-3" />
+                                <feature.Icon className="text-3xl text-primary mb-3" />
                                 <h3 className="card-title">{feature.title}</h3>
                                 <p className="text-base-content/70">{feature.desc}</p>
                             </div>

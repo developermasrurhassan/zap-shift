@@ -76,6 +76,36 @@
   z-index: 1000;
 }
 
+
+.receipt-container {
+  font-family: 'Inter', sans-serif;
+}
+
+.receipt-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px dashed #e5e7eb;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.receipt-row:hover {
+  background-color: #f9fafb;
+}
+
+.receipt-row span:first-child {
+  color: #6b7280;
+  font-weight: 500;
+}
+
 /* 
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;

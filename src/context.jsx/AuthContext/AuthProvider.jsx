@@ -1,4 +1,4 @@
-import { createUserWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut } from "firebase/auth";
+import { createUserWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile } from "firebase/auth";
 import { AuthContext } from "./AuthContext";
 import { useEffect, useState } from "react";
 import { auth } from "../../Pages/Authentication/firebase/firebase.init";
@@ -22,6 +22,9 @@ const AuthProvider = ({ children }) => {
         return signInWithEmailAndPassword(auth, email, password);
     }
 
+    const updateUserProfile = profileInfo => {
+        return updateProfile(auth.currentUser, profileInfo);
+    }
     //social signin
     const signinWithGoogle = () => {
         setLoading(true)
@@ -50,6 +53,7 @@ const AuthProvider = ({ children }) => {
         signinWithGoogle,
         createUser,
         signInUser,
+        updateUserProfile,
         logOut,
         names: 'masrur',
         profession: 'web developer'
