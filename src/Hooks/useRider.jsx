@@ -19,6 +19,7 @@ const useRider = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [regions, setRegions] = useState([]);
     const [districts, setDistricts] = useState([]);
+    const [submissionError, setSubmissionError] = useState(null);
 
     // Watch region field
     const selectedRegion = watch('region');
@@ -94,11 +95,13 @@ const useRider = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['riders'] });
             toast.success('Rider application submitted successfully!');
+            submissionError(null);
             reset();
             navigate('/dashboard/pending-rider');
         },
         onError: (error) => {
             console.error('Submission error:', error.response?.data);
+            setSubmissionError(error.response?.data?.message || 'Failed to submit application');
             toast.error(error.response?.data?.message || 'Failed to submit application');
         },
     });
@@ -194,6 +197,7 @@ const useRider = () => {
         register,
         handleSubmit,
         errors,
+        submissionError,
         onSubmit,
         isLoading: isLoading || createRiderMutation.isPending,
         setValue,

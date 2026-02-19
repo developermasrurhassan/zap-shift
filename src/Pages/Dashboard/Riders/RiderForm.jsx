@@ -8,6 +8,7 @@ const RiderForm = () => {
         register,
         handleSubmit,
         errors,
+        submissionError,
         onSubmit,
         isLoading,
         regions,
@@ -325,6 +326,7 @@ const RiderForm = () => {
                                 >
                                     {isLoading ? 'Submitting...' : 'Submit Application'}
                                 </button>
+                                {submissionError && <p className="text-red-500 mt-2">{submissionError}</p>}
                             </form>
                         </div>
 
