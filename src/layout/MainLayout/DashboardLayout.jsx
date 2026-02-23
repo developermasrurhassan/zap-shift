@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaHistory, FaHome, FaTruck } from 'react-icons/fa';
+import { FaHistory, FaHome, FaTruck, FaVrCardboard } from 'react-icons/fa';
 import { NavLink, Outlet } from 'react-router';
 import ZapShiftLogo from '../../Pages/SharedComponent/Logo/ZapShiftLogo';
 import { FaHouse, FaMotorcycle } from 'react-icons/fa6';
@@ -43,7 +43,7 @@ const DashboardLayout = () => {
                         <ZapShiftLogo />
                     </div>
                     <li>
-                        <NavLink to={'/dashboard-home'}>
+                        <NavLink to={'/dashboard'}>
                             <FaHouse /> Home
                         </NavLink>
                     </li>
@@ -55,6 +55,11 @@ const DashboardLayout = () => {
                     <li>
                         <NavLink to={'/dashboard/payment-history'}>
                             <FaHistory />Payment History
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to={'/dashboard/my-application'}>
+                            <FaVrCardboard />My Application
                         </NavLink>
                     </li>
 
@@ -77,7 +82,7 @@ const DashboardLayout = () => {
                                     </NavLink>
                                 </li>
                                 <li>
-                                    <NavLink to={'/active-rider'}>
+                                    <NavLink to={'/dashboard/active-rider'}>
                                         Active Rider
                                     </NavLink>
                                 </li>

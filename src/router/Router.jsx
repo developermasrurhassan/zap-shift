@@ -16,6 +16,8 @@ import Payment from "../Pages/Dashboard/Payment/Payment";
 import PaymentHistory from "../Pages/Dashboard/PaymentHistory/PaymentHistory";
 import PendingRiders from "../Pages/Dashboard/Riders/PendingRiders";
 import RiderForm from "../Pages/Dashboard/Riders/RiderForm";
+import MyApplication from "../Pages/Dashboard/Riders/MyApplications";
+import ActiveRiders from "../Pages/Dashboard/Riders/ActiveRiders";
 
 
 export const router = createBrowserRouter([
@@ -70,6 +72,9 @@ export const router = createBrowserRouter([
             { path: "payment/:parcelId", Component: Payment },
             { path: "become-rider", Component: RiderForm },
             { path: "pending-rider", Component: PendingRiders },
+            { path: "active-rider", Component: ActiveRiders },
+            { path: "my-application", Component: MyApplication },
+
 
             // Add rider routes here:
             // Add this

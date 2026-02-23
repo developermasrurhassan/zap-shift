@@ -48,12 +48,23 @@ axiosSecure.interceptors.response.use(
 // Custom hook to use axiosSecure
 const UseAxiosSecure = () => {
     const { user } = useAuth();
-    axiosSecure.interceptors.request.use(config => {
-        config.headers.Authorization = `Bearer ${user?.accessToken}`;
+
+    // Add auth interceptor - FIXED VERSION
+    axiosSecure.interceptors.request.use(async config => {
+        if (user) {
+            try {
+                // 🔥 FIX: Use getIdToken(true) to get a fresh token
+                const token = await user.getIdToken(true);
+                config.headers.Authorization = `Bearer ${token}`;
+            } catch (error) {
+                console.error('Failed to get token:', error);
+            }
+        }
         return config;
-    }), error => {
+    }, error => {
         return Promise.reject(error);
-    }
+    });
+
     return axiosSecure;
 };
 

@@ -12,7 +12,7 @@ const useRider = () => {
     const axiosSecure = UseAxiosSecure();
     const queryClient = useQueryClient();
 
-    // Form states - FIX: Use proper default values
+    // Form states
     const { register, handleSubmit, formState: { errors }, watch, reset, setValue } = useForm();
 
     // Local states
@@ -30,16 +30,12 @@ const useRider = () => {
             try {
                 const response = await fetch('/warehouses.json');
                 const data = await response.json();
-
-                // Extract unique regions
                 const uniqueRegions = [...new Set(data.map(item => item.region))];
                 setRegions(uniqueRegions.sort());
             } catch (error) {
                 console.error('Error loading regions:', error);
-                // Remove toast - too annoying
             }
         };
-
         loadRegions();
     }, []);
 
@@ -50,17 +46,12 @@ const useRider = () => {
                 setDistricts([]);
                 return;
             }
-
             try {
                 const response = await fetch('/warehouses.json');
                 const data = await response.json();
-
-                // Filter districts by selected region
                 const filteredDistricts = data
                     .filter(item => item.region === selectedRegion)
                     .map(item => item.district);
-
-                // Remove duplicates and sort
                 const uniqueDistricts = [...new Set(filteredDistricts)];
                 setDistricts(uniqueDistricts.sort());
             } catch (error) {
@@ -68,20 +59,8 @@ const useRider = () => {
                 setDistricts([]);
             }
         };
-
         loadDistricts();
-    }, [selectedRegion, setValue]);
-
-    // Set user data when user changes - REMOVE THIS
-    // useEffect(() => {
-    //     if (user) {
-    //         setValue('name', user.displayName || '');
-    //         setValue('email', user.email || '');
-    //         if (user.phoneNumber) {
-    //             setValue('phoneNumber', user.phoneNumber);
-    //         }
-    //     }
-    // }, [user, setValue]);
+    }, [selectedRegion]);
 
     // Bike brands list
     const bikeBrands = [
@@ -89,57 +68,90 @@ const useRider = () => {
         'Bajaj', 'Hero', 'United', 'Walton', 'Other'
     ];
 
-    // Create rider mutation - USE THIS INSTEAD OF onSubmit function
+    // Create rider mutation
     const createRiderMutation = useMutation({
         mutationFn: (riderData) => axiosSecure.post('/riders', riderData),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['riders'] });
             toast.success('Rider application submitted successfully!');
-            submissionError(null);
+            setSubmissionError(null);
             reset();
-            navigate('/dashboard/pending-rider');
+            navigate('/dashboard/my-application');
         },
         onError: (error) => {
             console.error('Submission error:', error.response?.data);
-            setSubmissionError(error.response?.data?.message || 'Failed to submit application');
-            toast.error(error.response?.data?.message || 'Failed to submit application');
+            const errorMsg = error.response?.data?.message || 'Failed to submit application';
+            setSubmissionError(errorMsg);
+            toast.error(errorMsg);
         },
     });
 
-    // NEW onSubmit function using mutation
+    // Get current user's rider application - FIXED
+    const useMyRiderApplication = () => {
+        return useQuery({
+            queryKey: ['riders', 'my-application', user?.uid],
+            queryFn: async () => {
+                const response = await axiosSecure.get(`/riders?status=my-application`);
+                // Return the first application or null
+                return response.data?.data?.[0] || null;
+            },
+            enabled: !!user, // Only run if user exists
+        });
+    };
+
+    // Get all pending riders (for admin)
+    const useAllPendingRiders = () => {
+        return useQuery({
+            queryKey: ['riders', 'pending'],
+            queryFn: async () => {
+                const response = await axiosSecure.get(`/riders?status=pending`);
+                return response.data?.data || [];
+            },
+        });
+    };
+
+    // Get all active riders (for admin)
+    const useAllActiveRiders = () => {
+        return useQuery({
+            queryKey: ['riders', 'all-active'],
+            queryFn: async () => {
+                const response = await axiosSecure.get(`/riders?status=active`);
+                return response.data?.data || [];
+            },
+        });
+    };
+
+    // Get all inactive riders (for admin)
+    const useAllInactiveRiders = () => {
+        return useQuery({
+            queryKey: ['riders', 'all-inactive'],
+            queryFn: async () => {
+                const response = await axiosSecure.get(`/riders?status=inactive`);
+                return response.data?.data || [];
+            },
+        });
+    };
+
+    // Form submission handler
     const onSubmit = async (formData) => {
         setIsLoading(true);
+        setSubmissionError(null);
 
         try {
-            // Prepare data to match backend structure
             const riderData = {
-                // Personal info
                 name: formData.name,
                 email: formData.email,
                 phone: formData.phoneNumber,
-
-                // Documents
                 drivingLicense: formData.drivingLicense,
                 nid: formData.nid,
-
-                // Location
                 region: formData.region,
                 district: formData.district,
-
-                // Bike info
                 bikeBrand: formData.bikeBrand,
                 bikeModel: formData.bikeModel,
                 bikeRegistration: formData.bikeRegistration,
-
-                // About
                 about: formData.about,
             };
-
-            console.log('Submitting rider data:', riderData);
-
-            // Use the mutation
             await createRiderMutation.mutateAsync(riderData);
-
         } catch (error) {
             console.error('Submission error:', error);
         } finally {
@@ -147,30 +159,16 @@ const useRider = () => {
         }
     };
 
-    // Get riders by status - FIX response format
-    const useRidersByStatus = (status) => {
-        return useQuery({
-            queryKey: ['riders', status],
-            queryFn: async () => {
-                const response = await axiosSecure.get(`/riders?status=${status}`);
-                console.log('Riders response:', response.data);
-                return response.data.data || []; // Extract data array
-            },
-            enabled: !!status,
-        });
-    };
-
-    // Specific status queries
-    const usePendingRiders = () => useRidersByStatus('pending');
-    const useActiveRiders = () => useRidersByStatus('active');
-    const useInactiveRiders = () => useRidersByStatus('inactive');
-
-    // Update rider status
+    // Update rider status (for admin)
     const updateStatusMutation = useMutation({
         mutationFn: ({ riderId, status }) =>
             axiosSecure.patch(`/riders/${riderId}`, { status }),
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: ['riders'] });
+            // Invalidate BOTH the old list and the new list
+            queryClient.invalidateQueries({ queryKey: ['riders', 'pending'] }); // Pending list
+            queryClient.invalidateQueries({ queryKey: ['riders', 'active'] });   // Active list
+            queryClient.invalidateQueries({ queryKey: ['riders', 'inactive'] }); // Inactive list
+
             const action = variables.status === 'active' ? 'accepted' :
                 variables.status === 'inactive' ? 'deactivated' : 'updated';
             toast.success(`Rider ${action} successfully!`);
@@ -180,11 +178,12 @@ const useRider = () => {
         },
     });
 
-    // Delete rider
+    // Delete rider (for admin)
     const deleteRiderMutation = useMutation({
         mutationFn: (riderId) => axiosSecure.delete(`/riders/${riderId}`),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['riders'] });
+            // Invalidate the pending list
+            queryClient.invalidateQueries({ queryKey: ['riders', 'pending'] });
             toast.success('Rider application deleted successfully!');
         },
         onError: (error) => {
@@ -201,6 +200,7 @@ const useRider = () => {
         onSubmit,
         isLoading: isLoading || createRiderMutation.isPending,
         setValue,
+
         // Data
         regions,
         districts,
@@ -212,20 +212,17 @@ const useRider = () => {
         userEmail: user?.email || '',
         userPhone: user?.phoneNumber || '',
 
-        createRider: createRiderMutation.mutateAsync,
-        createRiderLoading: createRiderMutation.isPending,
+        // User's own application
+        useMyRiderApplication,
 
-        // Read
-        useRidersByStatus,
-        usePendingRiders,
-        useActiveRiders,
-        useInactiveRiders,
+        // Admin queries
+        useAllPendingRiders,
+        useAllActiveRiders,
+        useAllInactiveRiders,
 
-        // Update
+        // Admin mutations
         updateStatus: updateStatusMutation.mutateAsync,
         updateStatusLoading: updateStatusMutation.isPending,
-
-        // Delete
         deleteRider: deleteRiderMutation.mutateAsync,
         deleteRiderLoading: deleteRiderMutation.isPending,
     };
