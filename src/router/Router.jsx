@@ -11,13 +11,16 @@ import SendParcel from "../Pages/SendPercel/SendParcel";
 import PrivateRoutes from "./Routes/PrivateRoutes";
 import DashboardLayout from "../layout/MainLayout/DashboardLayout";
 import MyParcel from "../Pages/Dashboard/MyParcel/MyParcel";
-import PaymentForm from "../Pages/Dashboard/Payment/PaymentForm";
 import Payment from "../Pages/Dashboard/Payment/Payment";
 import PaymentHistory from "../Pages/Dashboard/PaymentHistory/PaymentHistory";
 import PendingRiders from "../Pages/Dashboard/Riders/PendingRiders";
-import RiderForm from "../Pages/Dashboard/Riders/RiderForm";
 import MyApplication from "../Pages/Dashboard/Riders/MyApplications";
 import ActiveRiders from "../Pages/Dashboard/Riders/ActiveRiders";
+import AdminDashboardHome from "../Pages/Dashboard/AdminDashboardHome/AdminDashboardHome";
+import Forbidden from "../Pages/ErrorPage/Forbidden";
+import AdminRoute from "./Routes/AdminRoute";
+import InactiveRiders from "../Pages/Dashboard/Riders/InactiveRiders";
+import DashboardHome from "../Pages/Dashboard/DashBoardHome";
 
 
 export const router = createBrowserRouter([
@@ -66,20 +69,31 @@ export const router = createBrowserRouter([
     {
         path: 'dashboard',
         element: <PrivateRoutes><DashboardLayout /></PrivateRoutes>,
+
         children: [
-            { path: 'my-parcel', Component: MyParcel },
-            { path: 'payment-history', Component: PaymentHistory },
-            { path: "payment/:parcelId", Component: Payment },
-            { path: "become-rider", Component: RiderForm },
-            { path: "pending-rider", Component: PendingRiders },
-            { path: "active-rider", Component: ActiveRiders },
-            { path: "my-application", Component: MyApplication },
+            // User routes
+            { index: true, element: <DashboardHome /> },
+            { path: 'my-parcel', element: <MyParcel /> },
+            { path: 'payment-history', element: <PaymentHistory /> },
+            { path: 'payment/:parcelId', element: <Payment /> },
+            { path: 'my-application', element: <MyApplication /> },
+
+            // Admin routes
+
+            { path: 'admin/riders/pending', element: <AdminRoute><PendingRiders /></AdminRoute> },
+            { path: 'admin/riders/active', element: <AdminRoute><ActiveRiders /></AdminRoute> },
+            { path: 'admin/riders/inactive', element: <AdminRoute><InactiveRiders /></AdminRoute> },
+        ],
+
+    },
+    {
+        path: '/forbidden',
+        element: <Forbidden />,
+    },
+    // Add rider routes here:
+    // Add this
+    // { path: 'rider/active', Component: ActiveRiders },
+    // { path: 'rider/inactive', Component: InactiveRiders },
 
 
-            // Add rider routes here:
-            // Add this
-            // { path: 'rider/active', Component: ActiveRiders },
-            // { path: 'rider/inactive', Component: InactiveRiders },
-        ]
-    }
 ]);

@@ -1,22 +1,66 @@
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
+import Swal from 'sweetalert2';
+
+import { FaEye, FaToggleOff, FaMotorcycle, FaUserClock } from 'react-icons/fa';
+import { ImCross } from 'react-icons/im';
+import { RiUserLocationLine } from 'react-icons/ri';
+import { BiTime } from 'react-icons/bi';
 import useRider from '../../../Hooks/useRider';
-import Loading from '../../ErrorPage/Loading';
+import { InlineLoading } from '../../ErrorPage/Loading';
 
 const InactiveRiders = () => {
-    const { useInactiveRiders, updateStatus } = useRider();
-    const { data: riders = [], isLoading, refetch } = useInactiveRiders();
+    const { useAllInactiveRiders, updateStatus } = useRider();
+    const { data: riders = [], isLoading, refetch, error } = useAllInactiveRiders();
     const [selectedRider, setSelectedRider] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [filter, setFilter] = useState('all');
 
-    const handleActivate = async (riderId) => {
-        if (window.confirm('Are you sure you want to activate this rider?')) {
-            try {
+    const getSortedRiders = () => {
+        if (!riders.length) return [];
+
+        const sorted = [...riders];
+        if (filter === 'recent') {
+            return sorted.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        } else if (filter === 'oldest') {
+            return sorted.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
+        }
+        return sorted;
+    };
+
+    const handleActivate = async (riderId, riderName) => {
+        try {
+            const result = await Swal.fire({
+                title: 'Activate Rider?',
+                html: `<p class="text-gray-600">Are you sure you want to activate <span class="font-semibold">${riderName}</span>?</p>
+                       <p class="text-sm text-gray-500 mt-2">They will be moved to active riders.</p>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Yes, activate',
+                cancelButtonText: 'Cancel',
+                background: '#fff',
+                backdrop: 'rgba(0,0,0,0.4)'
+            });
+
+            if (result.isConfirmed) {
                 await updateStatus({ riderId, status: 'active' });
-                refetch();
-            } catch (error) {
-                toast.error('Failed to activate rider');
+
+                await Swal.fire({
+                    title: 'Activated!',
+                    text: 'Rider has been moved to active list.',
+                    icon: 'success',
+                    confirmButtonColor: '#10b981',
+                    timer: 2000,
+                    timerProgressBar: true
+                });
+
+                toast.success('Rider activated successfully');
             }
+        } catch (error) {
+            toast.error('Failed to activate rider');
+            console.error('Activate error:', error);
         }
     };
 
@@ -25,140 +69,346 @@ const InactiveRiders = () => {
         setShowModal(true);
     };
 
+    const closeModal = () => {
+        setShowModal(false);
+        setSelectedRider(null);
+    };
+
+    const getInactiveDuration = (updatedAt) => {
+        if (!updatedAt) return 'N/A';
+        const inactiveDate = new Date(updatedAt);
+        const now = new Date();
+        const days = Math.floor((now - inactiveDate) / (1000 * 60 * 60 * 24));
+        if (days === 0) return 'Today';
+        if (days === 1) return '1 day';
+        return `${days} days`;
+    };
+
     if (isLoading) {
-        return <Loading />;
+        return <InlineLoading />;
     }
 
-    return (
-        <div className="p-6">
-            {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Inactive Riders</h1>
-                <p className="text-gray-600 mt-2">
-                    View and manage previously active riders who are currently inactive.
-                </p>
-                <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center">
-                        <div className="text-gray-600 mr-3">
-                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                        <p className="text-gray-800">
-                            <span className="font-semibold">{riders.length}</span> inactive rider(s) - Can be reactivated anytime
-                        </p>
-                    </div>
+    if (error) {
+        return (
+            <div className="p-6">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p className="text-red-600">Error loading inactive riders: {error.message}</p>
+                    <button onClick={() => refetch()} className="mt-2 btn btn-sm btn-outline">
+                        Try Again
+                    </button>
                 </div>
             </div>
+        );
+    }
 
-            {/* Table */}
-            <div className="bg-white rounded-xl shadow overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    SL No.
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Rider Details
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Contact Info
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Location
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Status & Date
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Actions
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {riders.length > 0 ? (
-                                riders.map((rider, index) => (
-                                    <tr key={rider._id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900">{index + 1}</div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center">
-                                                <div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                                                    <span className="text-gray-600 font-bold">{rider.name?.charAt(0) || 'R'}</span>
-                                                </div>
-                                                <div className="ml-4">
-                                                    <div className="text-sm font-medium text-gray-900">{rider.name}</div>
-                                                    <div className="text-sm text-gray-500">
-                                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                                            Inactive
+    const sortedRiders = getSortedRiders();
+
+    return (
+        <div className="dashboard-content w-full">
+            <div className="p-4 md:p-6">
+                {/* Header Section */}
+                <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
+                            <FaUserClock className="text-gray-600" />
+                            Inactive Riders
+                        </h1>
+                        <p className="text-gray-600 mt-1 text-sm md:text-base">
+                            View and manage inactive riders. They can be reactivated anytime.
+                        </p>
+                    </div>
+
+                    {/* Stats and Filter */}
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 flex items-center">
+                            <FaMotorcycle className="text-gray-600 text-xl mr-2" />
+                            <div>
+                                <p className="text-xs text-gray-600">Total Inactive</p>
+                                <p className="text-2xl font-bold text-gray-700">{riders.length}</p>
+                            </div>
+                        </div>
+
+                        <select
+                            value={filter}
+                            onChange={(e) => setFilter(e.target.value)}
+                            className="select select-bordered select-sm bg-white w-full sm:w-auto"
+                        >
+                            <option value="all">All Riders</option>
+                            <option value="recent">Recently Inactive</option>
+                            <option value="oldest">Oldest First</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* Table Section */}
+                <div className="bg-white rounded-xl shadow overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rider</th>
+                                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+                                    <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
+                                    <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Inactive Since</th>
+                                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {sortedRiders.length > 0 ? (
+                                    sortedRiders.map((rider, index) => (
+                                        <tr key={rider._id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                {index + 1}
+                                            </td>
+                                            <td className="px-4 md:px-6 py-4">
+                                                <div className="flex items-center">
+                                                    <div className="flex-shrink-0 h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                                        <span className="text-gray-700 font-bold text-sm">
+                                                            {rider.name?.charAt(0) || 'R'}
                                                         </span>
                                                     </div>
+                                                    <div className="ml-3">
+                                                        <div className="text-sm font-semibold text-gray-900">{rider.name}</div>
+                                                        <div className="md:hidden text-xs text-gray-500 flex items-center">
+                                                            <RiUserLocationLine className="mr-1" /> {rider.region}
+                                                        </div>
+                                                        <div className="md:hidden text-xs text-gray-500">
+                                                            Inactive: {getInactiveDuration(rider.updatedAt)}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm text-gray-900">{rider.email}</div>
-                                            <div className="text-sm text-gray-500">{rider.phone || 'No phone'}</div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm text-gray-900">{rider.region}</div>
-                                            <div className="text-sm text-gray-500">{rider.district}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">
-                                                {rider.activatedAt ? `Was active for ${Math.floor((new Date(rider.updatedAt) - new Date(rider.activatedAt)) / (1000 * 60 * 60 * 24))} days` : 'Never activated'}
-                                            </div>
-                                            <div className="text-sm text-gray-500">
-                                                Last updated: {new Date(rider.updatedAt).toLocaleDateString()}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <div className="flex space-x-2">
-                                                <button
-                                                    onClick={() => handleViewDetails(rider)}
-                                                    className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-gray-700 bg-white rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                                    title="View Details"
-                                                >
-                                                    <span className="mr-1">👁️</span> View
-                                                </button>
-                                                <button
-                                                    onClick={() => handleActivate(rider._id)}
-                                                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                                                    title="Activate Rider"
-                                                >
-                                                    <span className="mr-1">✅</span> Activate
-                                                </button>
+                                            </td>
+                                            <td className="px-4 md:px-6 py-4">
+                                                <div className="text-sm text-gray-900">{rider.email}</div>
+                                                <div className="text-xs text-gray-500">{rider.phone || 'No phone'}</div>
+                                            </td>
+                                            <td className="hidden md:table-cell px-6 py-4">
+                                                <div className="text-sm font-medium text-gray-900">{rider.region}</div>
+                                                <div className="text-xs text-gray-500">{rider.district}</div>
+                                            </td>
+                                            <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-900">
+                                                    {rider.updatedAt
+                                                        ? new Date(rider.updatedAt).toLocaleDateString('en-US', {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        })
+                                                        : 'N/A'
+                                                    }
+                                                </div>
+                                                <div className="flex items-center text-xs text-gray-500 mt-1">
+                                                    <BiTime className="mr-1" />
+                                                    {getInactiveDuration(rider.updatedAt)}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                                                <div className="flex flex-wrap gap-2">
+                                                    <button
+                                                        onClick={() => handleViewDetails(rider)}
+                                                        className="btn btn-xs btn-ghost tooltip"
+                                                        data-tip="View Details"
+                                                        title="View Details"
+                                                    >
+                                                        <FaEye className="text-blue-600 text-base" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleActivate(rider._id, rider.name)}
+                                                        className="btn btn-xs btn-success text-white tooltip"
+                                                        data-tip="Activate"
+                                                        title="Activate Rider"
+                                                    >
+                                                        <FaToggleOff className="text-base" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="6" className="px-6 py-12 text-center">
+                                            <div className="text-gray-500">
+                                                <div className="text-6xl mb-4 flex justify-center">
+                                                    <FaMotorcycle className="text-gray-300" />
+                                                </div>
+                                                <p className="text-xl font-medium text-gray-700 mb-2">No Inactive Riders</p>
+                                                <p className="text-sm text-gray-500 mb-4">
+                                                    All riders are currently active or pending.
+                                                </p>
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center">
-                                        <div className="text-gray-500">
-                                            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                                            </svg>
-                                            <p className="mt-2 text-lg font-medium">No inactive riders</p>
-                                            <p className="mt-1">All riders are currently active or pending.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
 
-            {/* Rider Details Modal (same structure) */}
-            {showModal && selectedRider && (
-                <div className="fixed inset-0 z-50 overflow-y-auto">
-                    {/* Same modal structure with Activate button */}
-                </div>
-            )}
+                {/* Quick Stats Row */}
+                {riders.length > 0 && (
+                    <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="bg-white rounded-lg shadow p-4 border-l-4 border-gray-500">
+                            <p className="text-sm text-gray-600">Total Inactive</p>
+                            <p className="text-2xl font-bold text-gray-900">{riders.length}</p>
+                        </div>
+                        <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+                            <p className="text-sm text-gray-600">Unique Regions</p>
+                            <p className="text-2xl font-bold text-gray-900">
+                                {new Set(riders.map(r => r.region)).size}
+                            </p>
+                        </div>
+                        <div className="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500">
+                            <p className="text-sm text-gray-600">Avg. Inactive Days</p>
+                            <p className="text-2xl font-bold text-gray-900">
+                                {Math.round(riders.reduce((acc, r) =>
+                                    acc + (new Date() - new Date(r.updatedAt)) / (1000 * 60 * 60 * 24), 0
+                                ) / riders.length)} days
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Rider Details Modal */}
+                {showModal && selectedRider && (
+                    <div className="fixed inset-0 z-[9999] overflow-y-auto">
+                        <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                            {/* Background overlay */}
+                            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+                                <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+                            </div>
+
+                            {/* Modal panel */}
+                            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl w-full relative z-[10000]">
+                                <div className="bg-white px-6 pt-6 pb-4 sm:p-8">
+                                    {/* Header */}
+                                    <div className="flex justify-between items-center mb-4 pb-4 border-b">
+                                        <div>
+                                            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                                <FaUserClock className="text-gray-600" />
+                                                Inactive Rider Details
+                                            </h3>
+                                            <p className="text-gray-600 text-xs mt-1">ID: {selectedRider._id?.slice(-8)}</p>
+                                        </div>
+                                        <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 text-2xl">
+                                            ×
+                                        </button>
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                                        {/* Status Badge */}
+                                        <div className="bg-gray-100 p-3 rounded-lg flex items-center justify-between">
+                                            <span className="text-gray-800 font-medium">Current Status</span>
+                                            <span className="px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm font-semibold">
+                                                ⏸️ Inactive
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-xs text-gray-500">Name</p>
+                                                <p className="text-sm font-medium">{selectedRider.name}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500">Email</p>
+                                                <p className="text-sm">{selectedRider.email}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500">Phone</p>
+                                                <p className="text-sm">{selectedRider.phone || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500">Inactive Since</p>
+                                                <p className="text-sm">
+                                                    {selectedRider.updatedAt
+                                                        ? new Date(selectedRider.updatedAt).toLocaleDateString()
+                                                        : 'N/A'}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="border-t pt-4">
+                                            <h4 className="font-medium text-sm mb-2">Documents</h4>
+                                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                                <div>
+                                                    <p className="text-xs text-gray-500">License</p>
+                                                    <p>{selectedRider.drivingLicense}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-500">NID</p>
+                                                    <p>{selectedRider.nid}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="border-t pt-4">
+                                            <h4 className="font-medium text-sm mb-2">Location</h4>
+                                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                                <div>
+                                                    <p className="text-xs text-gray-500">Region</p>
+                                                    <p>{selectedRider.region}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-500">District</p>
+                                                    <p>{selectedRider.district}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="border-t pt-4">
+                                            <h4 className="font-medium text-sm mb-2">Bike</h4>
+                                            <div className="grid grid-cols-3 gap-4 text-sm">
+                                                <div>
+                                                    <p className="text-xs text-gray-500">Brand</p>
+                                                    <p>{selectedRider.bikeBrand}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-500">Model</p>
+                                                    <p>{selectedRider.bikeModel}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-500">Reg No.</p>
+                                                    <p className="text-xs">{selectedRider.bikeRegistration}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {selectedRider.activatedAt && (
+                                            <div className="border-t pt-4">
+                                                <h4 className="font-medium text-sm mb-2">Active Period</h4>
+                                                <p className="text-sm">
+                                                    {new Date(selectedRider.activatedAt).toLocaleDateString()} - {new Date(selectedRider.updatedAt).toLocaleDateString()}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    Total active days: {Math.floor((new Date(selectedRider.updatedAt) - new Date(selectedRider.activatedAt)) / (1000 * 60 * 60 * 24))}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Footer */}
+                                    <div className="mt-6 pt-4 border-t flex flex-col sm:flex-row gap-3 justify-end">
+                                        <button onClick={closeModal} className="btn btn-outline btn-sm">
+                                            Close
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                handleActivate(selectedRider._id, selectedRider.name);
+                                                closeModal();
+                                            }}
+                                            className="btn btn-success btn-sm text-white"
+                                        >
+                                            <FaToggleOff className="mr-1" /> Activate Rider
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

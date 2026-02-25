@@ -86,16 +86,16 @@ const useRider = () => {
         },
     });
 
-    // Get current user's rider application - FIXED
+    // Get current user's rider application
     const useMyRiderApplication = () => {
         return useQuery({
             queryKey: ['riders', 'my-application', user?.uid],
             queryFn: async () => {
                 const response = await axiosSecure.get(`/riders?status=my-application`);
-                // Return the first application or null
                 return response.data?.data?.[0] || null;
             },
-            enabled: !!user, // Only run if user exists
+            enabled: !!user,
+            staleTime: 30000,
         });
     };
 
@@ -107,28 +107,31 @@ const useRider = () => {
                 const response = await axiosSecure.get(`/riders?status=pending`);
                 return response.data?.data || [];
             },
+            staleTime: 30000,
         });
     };
 
     // Get all active riders (for admin)
     const useAllActiveRiders = () => {
         return useQuery({
-            queryKey: ['riders', 'all-active'],
+            queryKey: ['riders', 'active'],
             queryFn: async () => {
                 const response = await axiosSecure.get(`/riders?status=active`);
                 return response.data?.data || [];
             },
+            staleTime: 30000,
         });
     };
 
     // Get all inactive riders (for admin)
     const useAllInactiveRiders = () => {
         return useQuery({
-            queryKey: ['riders', 'all-inactive'],
+            queryKey: ['riders', 'inactive'],
             queryFn: async () => {
                 const response = await axiosSecure.get(`/riders?status=inactive`);
                 return response.data?.data || [];
             },
+            staleTime: 30000,
         });
     };
 
@@ -164,10 +167,9 @@ const useRider = () => {
         mutationFn: ({ riderId, status }) =>
             axiosSecure.patch(`/riders/${riderId}`, { status }),
         onSuccess: (_, variables) => {
-            // Invalidate BOTH the old list and the new list
-            queryClient.invalidateQueries({ queryKey: ['riders', 'pending'] }); // Pending list
-            queryClient.invalidateQueries({ queryKey: ['riders', 'active'] });   // Active list
-            queryClient.invalidateQueries({ queryKey: ['riders', 'inactive'] }); // Inactive list
+            queryClient.invalidateQueries({ queryKey: ['riders', 'pending'] });
+            queryClient.invalidateQueries({ queryKey: ['riders', 'active'] });
+            queryClient.invalidateQueries({ queryKey: ['riders', 'inactive'] });
 
             const action = variables.status === 'active' ? 'accepted' :
                 variables.status === 'inactive' ? 'deactivated' : 'updated';
@@ -182,7 +184,6 @@ const useRider = () => {
     const deleteRiderMutation = useMutation({
         mutationFn: (riderId) => axiosSecure.delete(`/riders/${riderId}`),
         onSuccess: () => {
-            // Invalidate the pending list
             queryClient.invalidateQueries({ queryKey: ['riders', 'pending'] });
             toast.success('Rider application deleted successfully!');
         },

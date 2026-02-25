@@ -7,10 +7,11 @@ import { FaTimesCircle } from "react-icons/fa";
 import { FaEnvelope, FaEye, FaEyeSlash, FaLock, FaUser } from "react-icons/fa6";
 import axios from "axios";
 import UseAxios from "../../../Hooks/UseAxios";
+import { auth } from '../../../Pages/Authentication/firebase/firebase.init';
 
 const Signup = () => {
     const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm();
-    const { createUser, updateUserProfile } = useAuth(); // Destructure updateUserProfile from useAuth
+    const { createUser, updateUserProfile } = useAuth();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [signupError, setSignupError] = useState("");
@@ -24,10 +25,10 @@ const Signup = () => {
         console.log("Form data:", data);
         setSignupError("");
 
-        // Validate image is uploaded
+        // 🔴 Validate image is uploaded - prevents submission without picture
         if (!profilePic) {
             setSignupError("Please upload a profile picture");
-            return;
+            return; // Function stops here, no API call is made
         }
 
         try {
@@ -45,24 +46,26 @@ const Signup = () => {
             });
             console.log("✅ Firebase profile updated");
 
-            // 3. update user data for your database
+            // Get the updated user after profile update
+            const updatedUser = auth.currentUser;
+
+            // 3. Save user to your backend database
             const userInfo = {
-                uid: user.uid,
+                uid: updatedUser.uid,
                 name: data.name,
                 email: data.email,
-                photoURL: profilePic, // Include the photoURL here
+                photoURL: profilePic,
                 role: 'user',
                 createdAt: new Date().toISOString(),
                 lastLogin: new Date().toISOString()
             };
 
-            console.log('Saving user to database:', userInfo);
+            console.log('📤 Saving user to database:', userInfo);
 
-            // 4. Save user to your backend database
             const userResponse = await axiosInstance.post('/users', userInfo);
             console.log("✅ User saved to database:", userResponse.data);
 
-            // 5. Navigate to signin
+            // 4. Navigate to signin
             navigate("/signin");
 
         } catch (error) {
@@ -76,7 +79,7 @@ const Signup = () => {
             } else if (error.code === 'auth/invalid-email') {
                 setSignupError("Invalid email address format.");
             } else if (error.response?.status === 400) {
-                setSignupError("Bad request. Please check your input data.");
+                setSignupError(error.response?.data?.message || "Bad request. Please check your input data.");
             } else {
                 setSignupError(error.message || "Signup failed. Please try again.");
             }
@@ -163,7 +166,7 @@ const Signup = () => {
                     )}
 
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                        {/* Profile Picture Field */}
+                        {/* Profile Picture Field - NO REACT-HOOK-FORM VALIDATION */}
                         <div className="form-control">
                             <label className="label">
                                 <span className="label-text font-semibold">Profile Picture *</span>
@@ -175,21 +178,13 @@ const Signup = () => {
                                 <input
                                     type="file"
                                     accept="image/*"
-                                    {...register('image', {
-                                        required: 'Profile picture is required',
-                                        onChange: handleImageUpload
-                                    })}
-                                    className={`input input-bordered w-full transition-all ${errors.image ? 'input-error' : 'focus:border-primary'}`}
+                                    onChange={handleImageUpload}
+                                    className="input input-bordered w-full pl-10 transition-all focus:border-primary"
                                 />
                             </div>
-                            {errors.image && (
-                                <label className="label">
-                                    <span className="label-text-alt text-error">{errors.image.message}</span>
-                                </label>
-                            )}
 
-                            {/* Image Preview */}
-                            {profilePic && (
+                            {/* Image Preview - Only shows when uploaded */}
+                            {profilePic ? (
                                 <div className="mt-2">
                                     <img
                                         src={profilePic}
@@ -198,6 +193,8 @@ const Signup = () => {
                                     />
                                     <p className="text-xs text-success mt-1">✓ Image uploaded successfully</p>
                                 </div>
+                            ) : (
+                                <p className="text-xs text-gray-500 mt-1">Upload a profile picture (required)</p>
                             )}
                         </div>
 
