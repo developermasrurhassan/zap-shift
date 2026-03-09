@@ -90,11 +90,36 @@ const RiderForm = () => {
                                             {...register('drivingLicense', {
                                                 required: 'Driving license is required',
                                                 pattern: {
-                                                    value: /^[A-Z0-9\-\s]+$/,
-                                                    message: 'Invalid license format'
+                                                    // Bangladeshi driving license format: 
+                                                    // Usually starts with 2 letters (division code) + 6-8 digits
+                                                    // Examples: BA1234567, DH123456, CTG12345678
+                                                    value: /^[A-Za-z]{2,3}[0-9]{6,10}$/,
+                                                    message: 'Invalid license format. Example: BA1234567 or DH123456'
+                                                },
+                                                minLength: {
+                                                    value: 8,
+                                                    message: 'License must be at least 8 characters'
+                                                },
+                                                maxLength: {
+                                                    value: 13,
+                                                    message: 'License cannot exceed 13 characters'
+                                                },
+                                                validate: {
+                                                    validBangladeshFormat: (value) => {
+                                                        // Check for common Bangladesh division codes
+                                                        const divisionCodes = ['BA', 'DH', 'CTG', 'KL', 'RJ', 'SY', 'BR'];
+                                                        const prefix = value.slice(0, 2).toUpperCase();
+
+                                                        // Check if starts with valid division code
+                                                        if (!divisionCodes.some(code => prefix.startsWith(code))) {
+                                                            return 'License must start with BA, DH, CTG, KL, RJ, SY, or BR';
+                                                        }
+                                                        return true;
+                                                    }
                                                 }
                                             })}
-                                            placeholder="BD-123456789"
+                                            placeholder="BA1234567 or DH123456"
+                                            maxLength={8}
                                             className={`input input-bordered w-full ${errors.drivingLicense ? 'input-error' : ''}`}
                                         />
                                         {errors.drivingLicense && (

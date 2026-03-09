@@ -91,8 +91,9 @@ const useRider = () => {
         return useQuery({
             queryKey: ['riders', 'my-application', user?.uid],
             queryFn: async () => {
-                const response = await axiosSecure.get(`/riders?status=my-application`);
-                return response.data?.data?.[0] || null;
+                // FIXED: Correct endpoint
+                const response = await axiosSecure.get(`/riders/my-application`);
+                return response.data?.data || null;
             },
             enabled: !!user,
             staleTime: 30000,

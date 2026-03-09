@@ -11,7 +11,8 @@ import {
     FaCreditCard,
     FaClock,
     FaTrash,
-    FaBan
+    FaBan,
+    FaTruck
 }
     from 'react-icons/fa';
 import { MdPayment } from 'react-icons/md';
@@ -831,6 +832,15 @@ const MyParcel = () => {
                                                             <FaTrash />
                                                         </button>
                                                     )}
+
+                                                    {/* // In your MyParcel component, add this button in the actions column */}
+                                                    <Link
+                                                        to={`/track/${parcel.trackingId}`}
+                                                        className="btn btn-xs btn-info"
+                                                        target="_blank"
+                                                    >
+                                                        <FaTruck className="mr-1" /> Track
+                                                    </Link>
                                                 </div>
                                             </div>
                                         </div>

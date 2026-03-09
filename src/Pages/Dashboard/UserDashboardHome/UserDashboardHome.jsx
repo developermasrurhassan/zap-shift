@@ -14,14 +14,14 @@ import {
     FaMoneyBillWave
 } from 'react-icons/fa';
 import useAuth from '../../../Hooks/useAuth';
-import useUserRole from '../../../Hooks/useUserRole';
 import UseAxiosSecure from '../../../Hooks/UseAxiosSecure';
+import useUserRole from '../../../Hooks/useUserRole';
 import Loading from '../../ErrorPage/Loading';
 
 
 const UserDashboardHome = () => {
     const { user } = useAuth();
-    const { role, isLoading: roleLoading } = useUserRole();
+    const { role, isLoading: roleLoading, isRider } = useUserRole(); // Add isRider
     const axiosSecure = UseAxiosSecure();
 
     // Fetch user's parcels
@@ -35,14 +35,15 @@ const UserDashboardHome = () => {
         staleTime: 30000,
     });
 
-    // Fetch user's rider application (if they are a rider)
+    // Fetch user's rider application (only if user is a rider)
     const { data: riderApplication, isLoading: riderLoading } = useQuery({
         queryKey: ['my-rider-application', user?.uid],
         queryFn: async () => {
-            const res = await axiosSecure.get(`/riders?status=my-application`);
-            return res.data?.data?.[0] || null;
+            // FIXED: Use the correct endpoint from useRider hook
+            const res = await axiosSecure.get(`/riders/my-application`);
+            return res.data?.data || null;
         },
-        enabled: !!user?.uid && role === 'rider',
+        enabled: !!user?.uid && isRider, // Only fetch if user is a rider
         staleTime: 30000,
     });
 
@@ -57,7 +58,7 @@ const UserDashboardHome = () => {
         staleTime: 30000,
     });
 
-    if (roleLoading || parcelsLoading || (role === 'rider' && riderLoading) || paymentsLoading) {
+    if (roleLoading || parcelsLoading || (isRider && riderLoading) || paymentsLoading) {
         return <Loading />;
     }
 
@@ -94,7 +95,7 @@ const UserDashboardHome = () => {
     return (
         <div className="space-y-6">
             {/* Welcome Section */}
-            <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl p-6">
+            <div className="bg-linear-to-r from-primary/10 to-secondary/10 rounded-xl p-6">
                 <h1 className="text-2xl font-bold text-gray-900">
                     Welcome back, {user?.displayName || 'User'}! 👋
                 </h1>
@@ -184,6 +185,7 @@ const UserDashboardHome = () => {
                                         <th className="px-4 py-2 hidden sm:table-cell">Date</th>
                                         <th className="px-4 py-2">Status</th>
                                         <th className="px-4 py-2">Price</th>
+                                        <th className="px-4 py-2">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -210,11 +212,21 @@ const UserDashboardHome = () => {
                                                 <td className="px-4 py-2 text-xs font-medium">
                                                     ${parcel.price || 0}
                                                 </td>
+                                                <td className="px-4 py-2">
+                                                    <Link
+                                                        to={`/track/${parcel.trackingId}`}
+                                                        target="_blank"
+                                                        className="btn btn-xs btn-info"
+                                                        title="Track Parcel"
+                                                    >
+                                                        <FaTruck className="mr-1" /> Track
+                                                    </Link>
+                                                </td>
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
+                                            <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
                                                 No parcels found
                                             </td>
                                         </tr>

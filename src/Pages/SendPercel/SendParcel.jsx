@@ -717,7 +717,7 @@ const SendParcel = () => {
                                     onClick={() => !submittedData && setCurrentStep(step.id)}
                                     disabled={submittedData || step.id > currentStep}
                                     className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all duration-300 ${step.id === currentStep
-                                        ? 'bg-primary text-white scale-110 ring-4 ring-primary/30'
+                                        ? 'bg-primary text-black scale-110 ring-4 ring-primary/30'
                                         : step.id < currentStep
                                             ? 'bg-success text-white'
                                             : 'bg-base-300 text-base-content/50'

@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { Link } from 'react-router';
 import useRider from '../../../Hooks/useRider';
 import Loading from '../../ErrorPage/Loading';
@@ -8,7 +7,6 @@ const MyApplication = () => {
     const { useMyRiderApplication } = useRider();
     const { data: application, isLoading, error, refetch } = useMyRiderApplication();
 
-    const [showDetails, setShowDetails] = useState(false);
 
     // Add refresh button
     const handleRefresh = () => {
@@ -69,13 +67,13 @@ const MyApplication = () => {
                 <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                     {/* Status Banner */}
                     <div className={`p-4 md:p-6 ${application.status === 'pending' ? 'bg-yellow-50 border-b border-yellow-200' :
-                            application.status === 'active' ? 'bg-green-50 border-b border-green-200' :
-                                'bg-gray-50 border-b border-gray-200'
+                        application.status === 'active' ? 'bg-green-50 border-b border-green-200' :
+                            'bg-gray-50 border-b border-gray-200'
                         }`}>
                         <div className="flex flex-col md:flex-row md:items-center gap-4">
                             <div className={`flex items-center ${application.status === 'pending' ? 'text-yellow-600' :
-                                    application.status === 'active' ? 'text-green-600' :
-                                        'text-gray-600'
+                                application.status === 'active' ? 'text-green-600' :
+                                    'text-gray-600'
                                 }`}>
                                 <span className="text-3xl mr-3">
                                     {application.status === 'pending' && '⏳'}
@@ -84,8 +82,8 @@ const MyApplication = () => {
                                 </span>
                                 <div>
                                     <h2 className={`text-lg md:text-xl font-semibold ${application.status === 'pending' ? 'text-yellow-800' :
-                                            application.status === 'active' ? 'text-green-800' :
-                                                'text-gray-800'
+                                        application.status === 'active' ? 'text-green-800' :
+                                            'text-gray-800'
                                         }`}>
                                         Status: {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
                                     </h2>
@@ -102,8 +100,8 @@ const MyApplication = () => {
                             </div>
                             <div className="md:ml-auto">
                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${application.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                        application.status === 'active' ? 'bg-green-100 text-green-800' :
-                                            'bg-gray-100 text-gray-800'
+                                    application.status === 'active' ? 'bg-green-100 text-green-800' :
+                                        'bg-gray-100 text-gray-800'
                                     }`}>
                                     {application.status === 'pending' && '⏳ Pending Review'}
                                     {application.status === 'active' && '✅ Active'}
@@ -197,12 +195,7 @@ const MyApplication = () => {
 
                     {/* Actions */}
                     <div className="p-4 md:p-6 bg-gray-50 border-t flex flex-col sm:flex-row gap-3 justify-between">
-                        <button
-                            onClick={() => setShowDetails(!showDetails)}
-                            className="btn btn-outline btn-sm"
-                        >
-                            {showDetails ? 'Show Less' : 'View Full Details'}
-                        </button>
+
                         <button
                             onClick={() => window.print()}
                             className="btn btn-primary btn-sm"
@@ -212,14 +205,7 @@ const MyApplication = () => {
                     </div>
 
                     {/* Full Details */}
-                    {showDetails && (
-                        <div className="p-4 md:p-6 border-t bg-white">
-                            <h3 className="font-semibold text-gray-700 mb-4">All Data</h3>
-                            <pre className="bg-gray-50 p-4 rounded-lg overflow-auto text-xs">
-                                {JSON.stringify(application, null, 2)}
-                            </pre>
-                        </div>
-                    )}
+
                 </div>
             )}
         </div>

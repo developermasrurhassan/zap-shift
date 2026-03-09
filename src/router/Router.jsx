@@ -14,17 +14,31 @@ import MyParcel from "../Pages/Dashboard/MyParcel/MyParcel";
 import Payment from "../Pages/Dashboard/Payment/Payment";
 import PaymentHistory from "../Pages/Dashboard/PaymentHistory/PaymentHistory";
 import PendingRiders from "../Pages/Dashboard/Riders/PendingRiders";
-import MyApplication from "../Pages/Dashboard/Riders/MyApplications";
 import ActiveRiders from "../Pages/Dashboard/Riders/ActiveRiders";
 import AdminDashboardHome from "../Pages/Dashboard/AdminDashboardHome/AdminDashboardHome";
 import Forbidden from "../Pages/ErrorPage/Forbidden";
 import AdminRoute from "./Routes/AdminRoute";
 import InactiveRiders from "../Pages/Dashboard/Riders/InactiveRiders";
 import DashboardHome from "../Pages/Dashboard/DashBoardHome";
-
+import AdminParcelManagement from "../Pages/Dashboard/AdminParcelManagement/AdminParcelManagement";
+import RiderDashboard from "../Pages/Dashboard/RiderDashboard/RiderDashboard";
+import RiderRoute from "./Routes/RiderRoute";
+import RiderForm from "../Pages/Dashboard/Riders/RiderForm";
+import MyApplication from "../Pages/Dashboard/Riders/MyApplications";
+import RiderEarnings from "../Pages/Dashboard/RiderDashboard/RiderEarnings";
+import TrackParcel from "../Pages/TrackParcel/TrackParcel";
+import AdminTracking from "../Pages/Dashboard/AdminTracking/AdminTracking";
+import RiderDeliveries from "../Pages/Dashboard/RiderDashboard/RiderDeliveries";
+// import TrackParcel from "../Pages/TrackParcel/TrackParcel"; // Add this import
+// import About from "../Pages/About/About"; // Add this import
+// import Contact from "../Pages/Contact/Contact"; // Add this import
+// import Pricing from "../Pages/Pricing/Pricing"; // Add this import
+// import Blog from "../Pages/Blog/Blog"; // Add this import
+// import Terms from "../Pages/Terms/Terms"; // Add this import
+// import Privacy from "../Pages/Privacy/Privacy"; // Add this import
 
 export const router = createBrowserRouter([
-
+    // Main Layout Routes
     {
         path: "/",
         Component: RootLayout,
@@ -32,68 +46,88 @@ export const router = createBrowserRouter([
         children: [
             { index: true, Component: HomePage },
             { path: "faq", Component: FAQPage },
+            { path: "track/:trackingId", Component: TrackParcel }, // Add this
+
+            // { path: "about", Component: About },
+            // { path: "contact", Component: Contact },
+            // { path: "pricing", Component: Pricing },
+            // { path: "blog", Component: Blog },
+            // { path: "terms", Component: Terms },
+            // { path: "privacy", Component: Privacy },
+            // { path: "track/:trackingId", Component: TrackParcel }, // Public tracking page
             {
-                path: 'coverage', Component: Coverage,
+                path: 'coverage',
+                Component: Coverage,
                 loader: () => fetch('/warehouses.json').then(res => res.json())
             },
             {
-                path: 'send-parcel', element: <PrivateRoutes><SendParcel /></PrivateRoutes>
+                path: 'send-parcel',
+                element: <PrivateRoutes><SendParcel /></PrivateRoutes>
             },
-
-            //  { path: "about", Component: About },
-
-
-            // {
-            //     path: "concerts",
-            //     children: [
-            //         // { index: true, Component: ConcertsHome },
-            //         // { path: ":city", Component: ConcertsCity },
-            //         // { path: "trending", Component: ConcertsTrending },
-            //     ],
-            // },
+            {
+                path: 'become-rider',
+                element: <PrivateRoutes><RiderForm /></PrivateRoutes>
+            },
         ],
     },
 
-    // authentication
-
+    // Authentication Routes
     {
         path: "/",
         Component: AuthLayout,
-        errorElement: < ErrorPage />,
+        errorElement: <ErrorPage />,
         children: [
             { path: "signin", Component: Signin },
             { path: "signup", Component: Signup },
         ],
     },
 
+    // Dashboard Routes
     {
         path: 'dashboard',
         element: <PrivateRoutes><DashboardLayout /></PrivateRoutes>,
-
         children: [
-            // User routes
+            // User routes - accessible by all authenticated users
             { index: true, element: <DashboardHome /> },
             { path: 'my-parcel', element: <MyParcel /> },
             { path: 'payment-history', element: <PaymentHistory /> },
             { path: 'payment/:parcelId', element: <Payment /> },
             { path: 'my-application', element: <MyApplication /> },
 
-            // Admin routes
+            // Admin routes - protected by AdminRoute
 
+            { path: 'admin', element: <AdminRoute><AdminDashboardHome /></AdminRoute> },
             { path: 'admin/riders/pending', element: <AdminRoute><PendingRiders /></AdminRoute> },
             { path: 'admin/riders/active', element: <AdminRoute><ActiveRiders /></AdminRoute> },
             { path: 'admin/riders/inactive', element: <AdminRoute><InactiveRiders /></AdminRoute> },
-        ],
+            { path: 'admin/parcels', element: <AdminRoute><AdminParcelManagement /></AdminRoute> },
+            { path: 'admin/dashboard', element: <AdminRoute><AdminDashboardHome /></AdminRoute> },
+            { path: 'admin/tracking', element: <AdminRoute><AdminTracking /></AdminRoute> },
 
+
+            {
+                path: 'rider',
+                element: <RiderRoute><RiderDashboard /></RiderRoute>,
+            },
+            {
+                path: 'rider/rider-deliveries',
+                element: <RiderRoute><RiderDeliveries /></RiderRoute>,
+            },
+            {
+                path: 'rider/my-earnings',
+                element: <RiderRoute><RiderEarnings /></RiderRoute>,
+            }
+
+        ],
     },
+
+    // Error Routes
     {
         path: '/forbidden',
         element: <Forbidden />,
     },
-    // Add rider routes here:
-    // Add this
-    // { path: 'rider/active', Component: ActiveRiders },
-    // { path: 'rider/inactive', Component: InactiveRiders },
-
-
+    {
+        path: '*',
+        element: <ErrorPage />,
+    },
 ]);

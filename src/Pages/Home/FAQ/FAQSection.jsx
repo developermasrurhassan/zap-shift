@@ -202,7 +202,7 @@ const FAQSection = () => {
                                 <div className="card-body p-6">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-4">
-                                            <div className={`p-3 rounded-full ${openIndex === index ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>
+                                            <div className={`p-3 rounded-full ${openIndex === index ? 'bg-primary text-black' : 'bg-primary/10 text-primary'}`}>
                                                 {faq.icon}
                                             </div>
                                             <h3 className="text-xl font-bold text-base-content">
