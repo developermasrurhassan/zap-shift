@@ -19,7 +19,7 @@ const CustomerTrackingPage = () => {
     setParcelData(null);
 
     try {
-      const response = await axios.get(`http://localhost:5000/track/${trackingId}`);
+      const response = await axios.get(`https://zap-shift-server-mu-ashy.vercel.app/track/${trackingId}`);
       if (response.data.success) {
         setParcelData(response.data.data);
       } else {
