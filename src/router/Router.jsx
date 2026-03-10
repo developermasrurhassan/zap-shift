@@ -1,3 +1,4 @@
+// src/Router/Router.jsx
 import { createBrowserRouter } from "react-router";
 import RootLayout from "../layout/MainLayout/RootLayout";
 import HomePage from "../Pages/Home/HomePage.jsx/HomePage";
@@ -26,16 +27,12 @@ import RiderRoute from "./Routes/RiderRoute";
 import RiderForm from "../Pages/Dashboard/Riders/RiderForm";
 import MyApplication from "../Pages/Dashboard/Riders/MyApplications";
 import RiderEarnings from "../Pages/Dashboard/RiderDashboard/RiderEarnings";
-import TrackParcel from "../Pages/TrackParcel/TrackParcel";
-import AdminTracking from "../Pages/Dashboard/AdminTracking/AdminTracking";
 import RiderDeliveries from "../Pages/Dashboard/RiderDashboard/RiderDeliveries";
-// import TrackParcel from "../Pages/TrackParcel/TrackParcel"; // Add this import
-// import About from "../Pages/About/About"; // Add this import
-// import Contact from "../Pages/Contact/Contact"; // Add this import
-// import Pricing from "../Pages/Pricing/Pricing"; // Add this import
-// import Blog from "../Pages/Blog/Blog"; // Add this import
-// import Terms from "../Pages/Terms/Terms"; // Add this import
-// import Privacy from "../Pages/Privacy/Privacy"; // Add this import
+import UserTrackingView from "../Pages/Dashboard/UserTrackingView/UserTrackingView";
+import AdminTracking from "../Pages/Dashboard/AdminTrackingView/AdminTracking";
+import AdminTrackingView from "../Pages/Dashboard/AdminTrackingView/AdminTrackingView";
+import RiderTrackingView from "../Pages/Dashboard/RiderDashboard/RiderTrackingView";
+
 
 export const router = createBrowserRouter([
     // Main Layout Routes
@@ -46,15 +43,7 @@ export const router = createBrowserRouter([
         children: [
             { index: true, Component: HomePage },
             { path: "faq", Component: FAQPage },
-            { path: "track/:trackingId", Component: TrackParcel }, // Add this
-
-            // { path: "about", Component: About },
-            // { path: "contact", Component: Contact },
-            // { path: "pricing", Component: Pricing },
-            // { path: "blog", Component: Blog },
-            // { path: "terms", Component: Terms },
-            // { path: "privacy", Component: Privacy },
-            // { path: "track/:trackingId", Component: TrackParcel }, // Public tracking page
+            { path: "track/:trackingId", Component: UserTrackingView },
             {
                 path: 'coverage',
                 Component: Coverage,
@@ -87,15 +76,15 @@ export const router = createBrowserRouter([
         path: 'dashboard',
         element: <PrivateRoutes><DashboardLayout /></PrivateRoutes>,
         children: [
-            // User routes - accessible by all authenticated users
+            // User routes
             { index: true, element: <DashboardHome /> },
             { path: 'my-parcel', element: <MyParcel /> },
             { path: 'payment-history', element: <PaymentHistory /> },
             { path: 'payment/:parcelId', element: <Payment /> },
             { path: 'my-application', element: <MyApplication /> },
+            { path: 'track/:trackingId', element: <UserTrackingView /> },
 
-            // Admin routes - protected by AdminRoute
-
+            // Admin routes
             { path: 'admin', element: <AdminRoute><AdminDashboardHome /></AdminRoute> },
             { path: 'admin/riders/pending', element: <AdminRoute><PendingRiders /></AdminRoute> },
             { path: 'admin/riders/active', element: <AdminRoute><ActiveRiders /></AdminRoute> },
@@ -103,21 +92,13 @@ export const router = createBrowserRouter([
             { path: 'admin/parcels', element: <AdminRoute><AdminParcelManagement /></AdminRoute> },
             { path: 'admin/dashboard', element: <AdminRoute><AdminDashboardHome /></AdminRoute> },
             { path: 'admin/tracking', element: <AdminRoute><AdminTracking /></AdminRoute> },
+            { path: 'admin/track/:trackingId', element: <AdminRoute><AdminTrackingView /></AdminRoute> },
 
-
-            {
-                path: 'rider',
-                element: <RiderRoute><RiderDashboard /></RiderRoute>,
-            },
-            {
-                path: 'rider/rider-deliveries',
-                element: <RiderRoute><RiderDeliveries /></RiderRoute>,
-            },
-            {
-                path: 'rider/my-earnings',
-                element: <RiderRoute><RiderEarnings /></RiderRoute>,
-            }
-
+            // Rider routes
+            { path: 'rider', element: <RiderRoute><RiderDashboard /></RiderRoute> },
+            { path: 'rider/rider-deliveries', element: <RiderRoute><RiderDeliveries /></RiderRoute> },
+            { path: 'rider/my-earnings', element: <RiderRoute><RiderEarnings /></RiderRoute> },
+            { path: 'rider/track/:parcelId', element: <RiderRoute><RiderTrackingView /></RiderRoute> },
         ],
     },
 

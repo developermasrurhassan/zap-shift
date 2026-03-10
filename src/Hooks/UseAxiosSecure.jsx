@@ -23,7 +23,7 @@ const UseAxiosSecure = () => {
         if (interceptorSet.current) return;
 
         interceptorSet.current = true;
-        // console.log('🔧 Setting up axios interceptors');
+        console.log('🔧 Setting up axios interceptors');
 
         // Request interceptor for auth
         const requestInterceptor = axiosSecure.interceptors.request.use(
@@ -31,15 +31,16 @@ const UseAxiosSecure = () => {
                 console.log(`📤 [AXIOS] ${config.method?.toUpperCase()} ${config.url}`);
 
                 // Skip token for public routes if needed
-                const publicRoutes = ['/login', '/register', '/track']; // Add your public routes
+                const publicRoutes = ['/track']; // Add your public routes
                 const isPublicRoute = publicRoutes.some(route => config.url?.includes(route));
 
-                if (isPublicRoute) {
+                // Don't skip for authenticated routes that need user context
+                if (isPublicRoute && !config.url?.includes('/admin/') && !config.url?.includes('/rider/')) {
                     console.log('🌐 Public route, skipping token');
                     return config;
                 }
 
-                // Always get fresh token when request is made
+                // Always get fresh token when request is made for protected routes
                 if (user) {
                     try {
                         const token = await user.getIdToken();
@@ -52,10 +53,12 @@ const UseAxiosSecure = () => {
                         return Promise.reject(error);
                     }
                 } else {
-                    console.log('⚠️ No user for protected route:', config.url);
-                    // Don't proceed without user for protected routes
-                    navigate('/signin');
-                    return Promise.reject(new Error('No authenticated user'));
+                    // If it's a protected route and no user, redirect
+                    if (!isPublicRoute) {
+                        console.log('⚠️ No user for protected route:', config.url);
+                        navigate('/signin');
+                        return Promise.reject(new Error('No authenticated user'));
+                    }
                 }
 
                 return config;
@@ -122,7 +125,10 @@ const UseAxiosSecure = () => {
 
                     case 403: // Forbidden
                         console.log('🚫 Forbidden access');
-                        navigate('/forbidden');
+                        // Don't navigate if it's an API error that component can handle
+                        if (!originalRequest.url?.includes('/api/')) {
+                            navigate('/forbidden');
+                        }
                         break;
 
                     case 404: // Not found
@@ -132,7 +138,7 @@ const UseAxiosSecure = () => {
 
                     case 500: // Server error
                         console.log('💥 Server error');
-                        // Show user-friendly message
+                        // Show user-friendly message in component
                         break;
 
                     default:

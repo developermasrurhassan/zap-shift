@@ -1,129 +1,141 @@
 // src/components/Loading/Loading.jsx
-import { useState, useEffect } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState, useRef } from 'react';
 
-// Import your logo - update the path as needed
-import Logo from "../../assets/logo.png"; // Update this path to your actual logo
+// Import your logo - update this path
+import logoImage from '../../assets/logo.png';
 
-const Loading = ({ message = "Loading...", fullScreen = true, size = "lg" }) => {
+const Loading = ({
+    message = "Loading Experience",
+    fullScreen = true,
+    size = "lg",
+    progress,
+    type = "default"
+}) => {
     const [loadingText, setLoadingText] = useState("");
-    const [dots, setDots] = useState("");
+    const [progressValue, setProgressValue] = useState(0);
+    const canvasRef = useRef(null);
+    const mousePosition = useRef({ x: 0, y: 0 });
 
     const sizeClasses = {
-        sm: "w-16 h-16",
-        md: "w-24 h-24",
-        lg: "w-32 h-32",
-        xl: "w-48 h-48"
+        sm: "w-32 h-32",
+        md: "w-48 h-48",
+        lg: "w-64 h-64",
+        xl: "w-80 h-80"
     };
 
-    // Animated dots effect
+    // 3D Sphere Animation
     useEffect(() => {
-        const interval = setInterval(() => {
-            setDots(prev => {
-                if (prev.length >= 3) return "";
-                return prev + ".";
+        if (type !== 'sphere') return;
+
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        const particleCount = 100;
+
+        for (let i = 0; i < particleCount; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 3 + 1,
+                speedX: (Math.random() - 0.5) * 2,
+                speedY: (Math.random() - 0.5) * 2,
+                color: `hsl(${Math.random() * 60 + 200}, 70%, 60%)`
             });
-        }, 500);
+        }
 
-        return () => clearInterval(interval);
-    }, []);
+        const animate = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Typewriter effect for message
+            particles.forEach(p => {
+                p.x += p.speedX;
+                p.y += p.speedY;
+
+                if (p.x < 0 || p.x > canvas.width) p.speedX *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.speedY *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+
+                // Mouse interaction
+                const dx = mousePosition.current.x - p.x;
+                const dy = mousePosition.current.y - p.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 100) {
+                    const angle = Math.atan2(dy, dx);
+                    p.x -= Math.cos(angle) * 2;
+                    p.y -= Math.sin(angle) * 2;
+                }
+            });
+
+            requestAnimationFrame(animate);
+        };
+
+        animate();
+
+        const handleMouseMove = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mousePosition.current = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        };
+
+        canvas.addEventListener('mousemove', handleMouseMove);
+        return () => canvas.removeEventListener('mousemove', handleMouseMove);
+    }, [type]);
+
+    // Typing effect
     useEffect(() => {
-        let currentIndex = 0;
-        const typeInterval = setInterval(() => {
-            if (currentIndex <= message.length) {
-                setLoadingText(message.substring(0, currentIndex));
-                currentIndex++;
+        let index = 0;
+        const interval = setInterval(() => {
+            if (index <= message.length) {
+                setLoadingText(message.substring(0, index));
+                index++;
             } else {
-                clearInterval(typeInterval);
+                clearInterval(interval);
             }
         }, 100);
 
-        return () => clearInterval(typeInterval);
+        return () => clearInterval(interval);
     }, [message]);
 
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1,
-                delayChildren: 0.1
-            }
-        }
-    };
+    // Progress simulation
+    useEffect(() => {
+        if (progress !== undefined) {
+            setProgressValue(progress);
+        } else {
+            const interval = setInterval(() => {
+                setProgressValue(prev => {
+                    if (prev >= 100) return 0;
+                    return prev + 1;
+                });
+            }, 50);
 
-    const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
-        visible: {
-            y: 0,
-            opacity: 1,
-            transition: {
-                type: "spring",
-                stiffness: 100,
-                damping: 12
-            }
+            return () => clearInterval(interval);
         }
-    };
+    }, [progress]);
 
-    const logoVariants = {
-        initial: { scale: 0, rotate: 0 },
-        animate: {
-            scale: [0, 1.2, 1],
-            rotate: [0, 360, 720],
-            transition: {
-                scale: {
-                    duration: 1.5,
-                    times: [0, 0.7, 1],
-                    repeat: Infinity,
-                    repeatDelay: 1
-                },
-                rotate: {
-                    duration: 2,
-                    ease: "linear",
-                    repeat: Infinity
-                }
-            }
-        },
-        pulse: {
-            scale: [1, 1.1, 1],
-            transition: {
-                duration: 1.5,
-                repeat: Infinity,
-                repeatDelay: 0.5
-            }
-        }
-    };
-
-    const ringVariants = {
+    const spinnerVariants = {
         animate: {
             rotate: 360,
             transition: {
                 duration: 3,
-                ease: "linear",
-                repeat: Infinity
+                repeat: Infinity,
+                ease: "linear"
             }
         }
     };
 
-    const particleVariants = {
-        animate: (i) => ({
-            y: [-20, 20, -20],
-            x: [0, i % 2 === 0 ? 10 : -10, 0],
-            opacity: [0.5, 1, 0.5],
-            transition: {
-                duration: 1.5 + i * 0.2,
-                repeat: Infinity,
-                delay: i * 0.1
-            }
-        })
-    };
-
-    const loadingBarVariants = {
-        initial: { width: "0%" },
+    const pulseVariants = {
         animate: {
-            width: ["0%", "100%", "0%"],
+            scale: [1, 1.2, 1],
+            opacity: [0.5, 1, 0.5],
             transition: {
                 duration: 2,
                 repeat: Infinity,
@@ -133,145 +145,271 @@ const Loading = ({ message = "Loading...", fullScreen = true, size = "lg" }) => 
     };
 
     const LoadingContent = () => (
-        <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="flex flex-col items-center justify-center space-y-8"
-        >
-            {/* Animated Rings */}
-            <div className="relative">
-                {/* Outer Ring */}
-                <motion.div
-                    variants={ringVariants}
-                    animate="animate"
-                    className={`absolute inset-0 border-4 border-primary/20 rounded-full ${sizeClasses[size]}`}
-                    style={{
-                        transformOrigin: "center"
-                    }}
-                />
-
-                {/* Middle Ring */}
-                <motion.div
-                    variants={ringVariants}
-                    animate="animate"
-                    className={`absolute inset-0 border-4 border-primary/40 rounded-full ${sizeClasses[size]}`}
-                    style={{
-                        transformOrigin: "center",
-                        animationDelay: "0.5s"
-                    }}
-                />
-
-                {/* Logo Container */}
-                <motion.div
-                    variants={logoVariants}
-                    initial="initial"
-                    animate="animate"
-                    className={`relative ${sizeClasses[size]} flex items-center justify-center`}
-                >
-                    {/* Logo with pulse effect */}
+        <div className="relative">
+            {/* Background Particles */}
+            <div className="absolute inset-0 overflow-hidden">
+                {[...Array(50)].map((_, i) => (
                     <motion.div
-                        variants={logoVariants}
-                        animate="pulse"
-                        className="w-full h-full flex items-center justify-center"
-                    >
-                        <img
-                            src={Logo}
-                            alt="Logo"
-                            className="w-3/4 h-3/4 object-contain"
-                            onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000000'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'/%3E%3C/svg%3E";
-                            }}
-                        />
-                    </motion.div>
-
-                    {/* Floating Particles */}
-                    {[...Array(8)].map((_, i) => (
-                        <motion.div
-                            key={i}
-                            custom={i}
-                            variants={particleVariants}
-                            animate="animate"
-                            className="absolute w-2 h-2 bg-primary rounded-full"
-                            style={{
-                                top: `${Math.sin(i * Math.PI / 4) * 50}%`,
-                                left: `${Math.cos(i * Math.PI / 4) * 50}%`,
-                            }}
-                        />
-                    ))}
-                </motion.div>
+                        key={i}
+                        className="absolute w-1 h-1 bg-primary/30 rounded-full"
+                        initial={{
+                            x: Math.random() * 100 + "%",
+                            y: Math.random() * 100 + "%",
+                        }}
+                        animate={{
+                            y: [null, "-100%"],
+                            opacity: [0, 1, 0],
+                        }}
+                        transition={{
+                            duration: 3 + Math.random() * 2,
+                            repeat: Infinity,
+                            delay: i * 0.1,
+                            ease: "linear"
+                        }}
+                    />
+                ))}
             </div>
 
-            {/* Loading Text */}
-            <motion.div variants={itemVariants} className="text-center space-y-4">
-                <h3 className="text-2xl font-bold text-primary">
-                    {loadingText}
-                    <span className="inline-block w-4">{dots}</span>
-                </h3>
-                <p className="text-base-content/70 text-sm max-w-md">
-                    Please wait while we prepare your experience
-                </p>
-            </motion.div>
-
-            {/* Progress Bar */}
-            <motion.div variants={itemVariants} className="w-64">
-                <div className="h-2 bg-base-300 rounded-full overflow-hidden">
+            {/* Main Loading Animation */}
+            <div className="relative flex flex-col items-center justify-center space-y-8">
+                {/* 3D Rotating Cube */}
+                <div className="relative perspective-1000">
                     <motion.div
-                        variants={loadingBarVariants}
-                        initial="initial"
+                        animate={{
+                            rotateX: 360,
+                            rotateY: 360,
+                        }}
+                        transition={{
+                            duration: 4,
+                            repeat: Infinity,
+                            ease: "linear"
+                        }}
+                        className="relative w-64 h-64"
+                        style={{
+                            transformStyle: "preserve-3d"
+                        }}
+                    >
+                        {/* Cube Faces */}
+                        {[...Array(6)].map((_, i) => {
+                            const faces = [
+                                { transform: "rotateY(0deg) translateZ(32px)", color: "from-blue-500/20 to-purple-500/20" },
+                                { transform: "rotateY(90deg) translateZ(32px)", color: "from-purple-500/20 to-pink-500/20" },
+                                { transform: "rotateY(180deg) translateZ(32px)", color: "from-pink-500/20 to-red-500/20" },
+                                { transform: "rotateY(-90deg) translateZ(32px)", color: "from-red-500/20 to-orange-500/20" },
+                                { transform: "rotateX(90deg) translateZ(32px)", color: "from-green-500/20 to-blue-500/20" },
+                                { transform: "rotateX(-90deg) translateZ(32px)", color: "from-yellow-500/20 to-green-500/20" }
+                            ];
+
+                            return (
+                                <motion.div
+                                    key={i}
+                                    className={`absolute inset-0 bg-gradient-to-br ${faces[i].color} rounded-2xl border border-white/10 backdrop-blur-sm`}
+                                    style={{
+                                        transform: faces[i].transform,
+                                        boxShadow: "0 0 30px rgba(0,0,0,0.3)"
+                                    }}
+                                >
+                                    {/* Logo on each face */}
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <img
+                                            src={logoImage}
+                                            alt="Logo"
+                                            className="w-16 h-16 object-contain opacity-30"
+                                        />
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </motion.div>
+
+                    {/* Inner Glow */}
+                    <motion.div
+                        variants={pulseVariants}
                         animate="animate"
-                        className="h-full bg-linear-to-r from-primary via-secondary to-primary"
+                        className="absolute inset-0 bg-gradient-to-r from-primary via-secondary to-primary rounded-full blur-3xl opacity-30"
                     />
                 </div>
-                <div className="flex justify-between text-xs text-base-content/50 mt-2">
-                    <span>0%</span>
-                    <span>Loading</span>
-                    <span>100%</span>
-                </div>
-            </motion.div>
 
-            {/* Loading Stats */}
-            <motion.div
-                variants={itemVariants}
-                className="grid grid-cols-3 gap-4 text-center"
-            >
-                {[
-                    { label: "Speed", value: "99%", color: "text-success" },
-                    { label: "Quality", value: "100%", color: "text-primary" },
-                    { label: "Secure", value: "✓", color: "text-secondary" }
-                ].map((stat, index) => (
-                    <div key={index} className="space-y-1">
-                        <div className={`text-lg font-bold ${stat.color}`}>
-                            {stat.value}
-                        </div>
-                        <div className="text-xs text-base-content/50">
-                            {stat.label}
-                        </div>
+                {/* Loading Text with Glitch */}
+                <div className="relative">
+                    <motion.h3
+                        animate={{
+                            textShadow: [
+                                "0 0 10px #fff",
+                                "0 0 20px #0ff",
+                                "0 0 30px #f0f",
+                                "0 0 10px #fff"
+                            ]
+                        }}
+                        transition={{
+                            duration: 2,
+                            repeat: Infinity
+                        }}
+                        className="text-3xl font-bold text-white"
+                    >
+                        {loadingText}
+                        <motion.span
+                            animate={{
+                                opacity: [0, 1, 0]
+                            }}
+                            transition={{
+                                duration: 1,
+                                repeat: Infinity
+                            }}
+                            className="inline-block w-1 h-8 bg-white ml-1"
+                        />
+                    </motion.h3>
+
+                    {/* Glitch Effect */}
+                    <motion.div
+                        animate={{
+                            x: [-2, 2, -2],
+                            opacity: [0, 0.5, 0]
+                        }}
+                        transition={{
+                            duration: 0.2,
+                            repeat: Infinity,
+                            repeatType: "reverse"
+                        }}
+                        className="absolute top-0 left-0 text-3xl font-bold text-red-500"
+                    >
+                        {loadingText}
+                    </motion.div>
+                    <motion.div
+                        animate={{
+                            x: [2, -2, 2],
+                            opacity: [0, 0.5, 0]
+                        }}
+                        transition={{
+                            duration: 0.2,
+                            repeat: Infinity,
+                            repeatType: "reverse",
+                            delay: 0.1
+                        }}
+                        className="absolute top-0 left-0 text-3xl font-bold text-blue-500"
+                    >
+                        {loadingText}
+                    </motion.div>
+                </div>
+
+                {/* Circular Progress */}
+                <div className="relative w-48 h-48">
+                    <svg className="w-full h-full transform -rotate-90">
+                        <circle
+                            cx="96"
+                            cy="96"
+                            r="88"
+                            className="stroke-white/10"
+                            strokeWidth="8"
+                            fill="none"
+                        />
+                        <motion.circle
+                            cx="96"
+                            cy="96"
+                            r="88"
+                            className="stroke-primary"
+                            strokeWidth="8"
+                            fill="none"
+                            strokeLinecap="round"
+                            initial={{ pathLength: 0 }}
+                            animate={{ pathLength: progressValue / 100 }}
+                            transition={{ duration: 0.5 }}
+                            style={{
+                                strokeDasharray: "553",
+                                strokeDashoffset: 553
+                            }}
+                        />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-3xl font-bold text-white">{progressValue}%</span>
                     </div>
-                ))}
-            </motion.div>
-
-            {/* Animated Tips */}
-            <motion.div
-                variants={itemVariants}
-                className="text-center space-y-2"
-            >
-                <p className="text-sm text-base-content/60 italic">
-                    "Good things come to those who wait"
-                </p>
-                <div className="flex items-center justify-center gap-2 text-xs text-base-content/50">
-                    <div className="w-1 h-1 bg-primary rounded-full animate-pulse"></div>
-                    <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: "0.2s" }}></div>
-                    <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: "0.4s" }}></div>
                 </div>
-            </motion.div>
-        </motion.div>
+
+                {/* Loading Tips */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1 }}
+                    className="text-center space-y-2"
+                >
+                    <p className="text-gray-400 text-sm">
+                        {tips[Math.floor(progressValue / 10) % tips.length]}
+                    </p>
+                    <div className="flex justify-center gap-1">
+                        {[...Array(10)].map((_, i) => (
+                            <motion.div
+                                key={i}
+                                className="w-2 h-2 rounded-full"
+                                animate={{
+                                    scale: i === Math.floor(progressValue / 10) ? [1, 1.5, 1] : 1,
+                                    backgroundColor: i <= Math.floor(progressValue / 10)
+                                        ? "#3b82f6"
+                                        : "#374151"
+                                }}
+                                transition={{
+                                    duration: 0.5
+                                }}
+                            />
+                        ))}
+                    </div>
+                </motion.div>
+
+                {/* Particle Sphere Canvas */}
+                {type === 'sphere' && (
+                    <canvas
+                        ref={canvasRef}
+                        width={400}
+                        height={400}
+                        className="absolute inset-0 w-full h-full"
+                    />
+                )}
+            </div>
+        </div>
     );
+
+    const tips = [
+        "Securing your connection...",
+        "Loading awesome content...",
+        "Almost there...",
+        "Preparing your dashboard...",
+        "Optimizing experience...",
+        "Loading animations...",
+        "Connecting to servers...",
+        "Almost ready...",
+        "Final touches...",
+        "Welcome back!"
+    ];
 
     if (fullScreen) {
         return (
-            <div className="fixed inset-0 z-50 bg-base-100 flex items-center justify-center">
+            <div className="fixed inset-0 z-[9999] bg-black flex items-center justify-center overflow-hidden">
+                {/* Animated Background */}
+                <div className="absolute inset-0">
+                    <motion.div
+                        animate={{
+                            background: [
+                                "radial-gradient(circle at 20% 20%, #1a1a1a, #000)",
+                                "radial-gradient(circle at 80% 80%, #1a1a1a, #000)",
+                                "radial-gradient(circle at 20% 20%, #1a1a1a, #000)"
+                            ]
+                        }}
+                        transition={{
+                            duration: 10,
+                            repeat: Infinity
+                        }}
+                        className="absolute inset-0"
+                    />
+
+                    {/* Grid Overlay */}
+                    <div className="absolute inset-0"
+                        style={{
+                            backgroundImage: `linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                                              linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)`,
+                            backgroundSize: '50px 50px'
+                        }}
+                    />
+                </div>
+
                 <LoadingContent />
             </div>
         );
@@ -284,45 +422,66 @@ const Loading = ({ message = "Loading...", fullScreen = true, size = "lg" }) => 
     );
 };
 
-// Optional: Create a smaller version for inline loading
-export const InlineLoading = ({ size = "sm", message = "" }) => {
-    const sizeClasses = {
+// Inline Loading Component
+export const InlineLoading = ({ size = "md", message = "Loading..." }) => {
+    const sizeMap = {
         sm: "w-8 h-8",
         md: "w-12 h-12",
         lg: "w-16 h-16"
     };
 
     return (
-        <div className="flex items-center justify-center space-x-3">
-            <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className={`relative ${sizeClasses[size]}`}
-            >
-                <div className={`absolute inset-0 border-2 border-primary/20 rounded-full ${sizeClasses[size]}`}></div>
-                <div className={`absolute inset-0 border-2 border-primary border-t-transparent rounded-full ${sizeClasses[size]}`}></div>
-                <img
-                    src={Logo}
-                    alt="Logo"
-                    className="w-1/2 h-1/2 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 object-contain"
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center gap-3"
+        >
+            <div className="relative">
+                <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className={`${sizeMap[size]} border-4 border-primary/20 border-t-primary rounded-full`}
                 />
-            </motion.div>
+                <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                    className="absolute inset-0 border-4 border-primary/30 rounded-full"
+                />
+            </div>
             {message && (
-                <span className="text-base-content/70">{message}</span>
+                <motion.span
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className="text-gray-300"
+                >
+                    {message}
+                </motion.span>
             )}
-        </div>
+        </motion.div>
     );
 };
 
-// Optional: Create a page loading wrapper
-// eslint-disable-next-line react-refresh/only-export-components
-export const withLoading = (Component) => {
-    return function WithLoadingComponent({ isLoading, ...props }) {
-        if (isLoading) {
-            return <Loading />;
-        }
-        return <Component {...props} />;
-    };
-};
+// Page Transition Loading
+export const PageLoading = () => (
+    <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+    >
+        <motion.div
+            animate={{
+                scale: [1, 1.2, 1],
+                rotate: [0, 360, 0]
+            }}
+            transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+            }}
+            className="w-32 h-32 border-4 border-primary border-t-transparent rounded-full"
+        />
+    </motion.div>
+);
 
 export default Loading;
