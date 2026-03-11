@@ -22,28 +22,95 @@ import {
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'motion/react';
 
-// We'll create a simple map without react-leaflet to avoid dependency issues
+// ============ CONSTANTS ============
+const BANGLADESH_CENTER = { lat: 23.6850, lng: 90.3563 };
+const DEFAULT_ZOOM = 7;
+const MARKER_ZOOM = 12;
+
+const REGION_COLORS = {
+    'Dhaka': '#3B82F6',
+    'Chattogram': '#10B981',
+    'Sylhet': '#8B5CF6',
+    'Rangpur': '#F59E0B',
+    'Khulna': '#EF4444',
+    'Rajshahi': '#EC4899',
+    'Barisal': '#06B6D4',
+    'Mymensingh': '#84CC16'
+};
+
+const PHONE_NUMBERS = {
+    'Dhaka': '+880 1234 567890',
+    'Chattogram': '+880 1234 567891',
+    'Sylhet': '+880 1234 567892',
+    'Khulna': '+880 1234 567893',
+    'Rajshahi': '+880 1234 567894',
+    'Barisal': '+880 1234 567895',
+    'Rangpur': '+880 1234 567896',
+    'Mymensingh': '+880 1234 567897'
+};
+
+// ============ HELPER COMPONENTS ============
+const AreaBadges = ({ areas, limit = 3 }) => (
+    <>
+        {areas.slice(0, limit).map(area => (
+            <span key={area} className="badge badge-sm badge-outline">
+                {area}
+            </span>
+        ))}
+        {areas.length > limit && (
+            <span className="badge badge-sm">
+                +{areas.length - limit} more
+            </span>
+        )}
+    </>
+);
+
+const StatCard = ({ label, value }) => (
+    <div className="card bg-base-100 shadow-lg border border-base-300 hover:shadow-xl transition-shadow">
+        <div className="card-body p-4 text-center">
+            <div className="text-3xl font-bold text-primary">{value}</div>
+            <div className="text-sm font-semibold text-base-content/70 capitalize">
+                {label}
+            </div>
+        </div>
+    </div>
+);
+
+// ============ MAIN COMPONENT ============
 const Coverage = () => {
+    // ============ DATA LOADING ============
     const warehouses = useLoaderData();
+
+    // ============ REFS ============
     const mapRef = useRef(null);
+    const markersRef = useRef([]);
+    const userMarkerRef = useRef(null);
+    const mapInstanceRef = useRef(null);
+    const leafletLoadedRef = useRef(false);
+
+    // ============ STATE ============
+    // UI State
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRegion, setSelectedRegion] = useState('All');
     const [selectedDistrict, setSelectedDistrict] = useState(null);
-    const [isMapFullscreen, setIsMapFullscreen] = useState(false);
     const [hoveredDistrict, setHoveredDistrict] = useState(null);
     const [showRegionDropdown, setShowRegionDropdown] = useState(false);
-    const [map, setMap] = useState(null);
-    const [zoom, setZoom] = useState(7);
-    const [center, setCenter] = useState({ lat: 23.6850, lng: 90.3563 });
+    const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+
+    // Map State
+    const [mapReady, setMapReady] = useState(false);
+    const [zoom, setZoom] = useState(DEFAULT_ZOOM);
+    const [center, setCenter] = useState(BANGLADESH_CENTER);
     const [userLocation, setUserLocation] = useState(null);
-    const [markers, setMarkers] = useState([]);
 
-    // Extract unique regions
-    const regions = ['All', ...new Set(warehouses.map(wh => wh.region))];
+    // ============ MEMOIZED VALUES ============
+    const regions = useMemo(() =>
+        ['All', ...new Set(warehouses.map(wh => wh.region))],
+        [warehouses]
+    );
 
-    // Filter warehouses based on search and region
-    const filteredWarehouses = useMemo(() => {
-        return warehouses.filter(warehouse => {
+    const filteredWarehouses = useMemo(() =>
+        warehouses.filter(warehouse => {
             const matchesSearch = searchTerm === '' ||
                 warehouse.district.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 warehouse.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -52,73 +119,138 @@ const Coverage = () => {
                 );
             const matchesRegion = selectedRegion === 'All' || warehouse.region === selectedRegion;
             return matchesSearch && matchesRegion;
-        });
-    }, [warehouses, searchTerm, selectedRegion]);
+        }),
+        [warehouses, searchTerm, selectedRegion]
+    );
 
-    // District statistics
-    const districtStats = {
+    const districtStats = useMemo(() => ({
         total: warehouses.length,
         active: warehouses.filter(w => w.status === 'active').length,
         regions: regions.length - 1,
         coverage: '64 districts'
-    };
+    }), [warehouses, regions]);
 
-    // Get contact number for a district
-    const getContactNumber = (region) => {
-        const phoneNumbers = {
-            'Dhaka': '+880 1234 567890',
-            'Chattogram': '+880 1234 567891',
-            'Sylhet': '+880 1234 567892',
-            'Khulna': '+880 1234 567893',
-            'Rajshahi': '+880 1234 567894',
-            'Barisal': '+880 1234 567895',
-            'Rangpur': '+880 1234 567896',
-            'Mymensingh': '+880 1234 567897'
-        };
-        return phoneNumbers[region] || '+880 1234 567899';
-    };
+    // ============ HELPER FUNCTIONS ============
+    const getRegionColor = useCallback((region) =>
+        REGION_COLORS[region] || '#6B7280',
+        []
+    );
 
-    // Get region color
-    const getRegionColor = (region) => {
-        const colors = {
-            'Dhaka': '#3B82F6',
-            'Chattogram': '#10B981',
-            'Sylhet': '#8B5CF6',
-            'Rangpur': '#F59E0B',
-            'Khulna': '#EF4444',
-            'Rajshahi': '#EC4899',
-            'Barisal': '#06B6D4',
-            'Mymensingh': '#84CC16'
-        };
-        return colors[region] || '#6B7280';
-    };
+    const getContactNumber = useCallback((region) =>
+        PHONE_NUMBERS[region] || '+880 1234 567899',
+        []
+    );
 
-    // Initialize Leaflet map
-    const initMap = useCallback(() => {
-        if (!mapRef.current || map) return;
+    // ============ MAP FUNCTIONS ============
+    const createMarkerIcon = useCallback((color) => {
+        if (!window.L) return null;
+        return window.L.divIcon({
+            html: `
+                <div style="
+                    background: ${color};
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    border: 3px solid white;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                ">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="white" viewBox="0 0 16 16">
+                        <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                    </svg>
+                </div>
+            `,
+            className: 'custom-marker',
+            iconSize: [28, 28],
+            iconAnchor: [14, 28],
+            popupAnchor: [0, -28]
+        });
+    }, []);
 
-        // Check if Leaflet is available
-        if (typeof window.L === 'undefined') {
-            console.error('Leaflet is not loaded. Please check the Leaflet CSS and JS are included.');
-            return;
+    const createPopupContent = useCallback((warehouse) => `
+        <div style="min-width: 220px; padding: 8px;">
+            <h3 style="font-weight: bold; font-size: 16px; margin: 0 0 4px 0; color: #333;">
+                ${warehouse.district}
+            </h3>
+            <p style="color: #666; font-size: 14px; margin: 0 0 8px 0;">
+                ${warehouse.city}, ${warehouse.region}
+            </p>
+            <p style="font-size: 12px; font-weight: bold; margin: 0 0 4px 0; color: #555;">
+                Covered Areas:
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px;">
+                ${warehouse.covered_area.slice(0, 3).map(area =>
+        `<span style="background: #f1f1f1; padding: 2px 8px; border-radius: 12px; font-size: 11px; color: #333;">${area}</span>`
+    ).join('')}
+                ${warehouse.covered_area.length > 3 ?
+            `<span style="background: #f1f1f1; padding: 2px 8px; border-radius: 12px; font-size: 11px; color: #333;">+${warehouse.covered_area.length - 3} more</span>` : ''
         }
+            </div>
+            <p style="font-size: 12px; margin: 0 0 4px 0;">
+                <strong>Phone:</strong> ${getContactNumber(warehouse.region)}
+            </p>
+            <span style="background: #10b981; color: white; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; display: inline-block;">
+                Active Branch
+            </span>
+        </div>
+    `, [getContactNumber]);
+
+    const clearMarkers = useCallback(() => {
+        markersRef.current.forEach(marker => marker.remove());
+        markersRef.current = [];
+
+        if (userMarkerRef.current) {
+            userMarkerRef.current.remove();
+            userMarkerRef.current = null;
+        }
+    }, []);
+
+    const updateMarkers = useCallback(() => {
+        const map = mapInstanceRef.current;
+        if (!map || !window.L || !mapReady) return;
+
+        clearMarkers();
+
+        filteredWarehouses.forEach(warehouse => {
+            const color = getRegionColor(warehouse.region);
+            const icon = createMarkerIcon(color);
+
+            if (!icon) return;
+
+            const marker = window.L.marker([warehouse.latitude, warehouse.longitude], { icon })
+                .addTo(map)
+                .bindPopup(createPopupContent(warehouse));
+
+            marker.on('click', () => {
+                setSelectedDistrict(warehouse);
+            });
+
+            markersRef.current.push(marker);
+        });
+    }, [filteredWarehouses, mapReady, getRegionColor, createMarkerIcon, createPopupContent, clearMarkers]);
+
+    const initMap = useCallback(() => {
+        if (!mapRef.current || mapInstanceRef.current || !window.L) return;
 
         try {
-            const leaflet = window.L;
+            const L = window.L;
 
-            // Create map instance
-            const mapInstance = leaflet.map(mapRef.current).setView([center.lat, center.lng], zoom);
+            // Clear container
+            mapRef.current.innerHTML = '';
 
-            // Add OpenStreetMap tiles
-            leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</Link> contributors',
+            const mapInstance = L.map(mapRef.current, {
+                fadeAnimation: false,
+                zoomAnimation: false
+            }).setView([BANGLADESH_CENTER.lat, BANGLADESH_CENTER.lng], DEFAULT_ZOOM);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                 maxZoom: 19,
             }).addTo(mapInstance);
 
-            // Store map instance
-            setMap(mapInstance);
-
-            // Add event listeners
             mapInstance.on('zoomend', () => {
                 setZoom(mapInstance.getZoom());
             });
@@ -128,119 +260,60 @@ const Coverage = () => {
                 setCenter({ lat: center.lat, lng: center.lng });
             });
 
+            mapInstanceRef.current = mapInstance;
+            setMapReady(true);
+            setZoom(DEFAULT_ZOOM);
+
         } catch (error) {
             console.error('Error initializing map:', error);
         }
-    }, [center.lat, center.lng, zoom, map]);
+    }, []);
 
-    // Update markers on map
-    const updateMarkers = useCallback(() => {
-        if (!map) return;
-
-        // Clear existing markers
-        markers.forEach(marker => marker.removeFrom(map));
-        const newMarkers = [];
-
-        // Add markers for filtered warehouses
-        filteredWarehouses.forEach(warehouse => {
-            try {
-                const leaflet = window.L;
-                if (!leaflet) return;
-
-                const color = getRegionColor(warehouse.region);
-
-                // Create custom marker icon
-                const icon = leaflet.divIcon({
-                    html: `
-                        <div style="
-                            background: ${color};
-                            width: 24px;
-                            height: 24px;
-                            border-radius: 50%;
-                            border: 3px solid white;
-                            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            cursor: pointer;
-                        ">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="white" viewBox="0 0 16 16">
-                                <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
-                            </svg>
-                        </div>
-                    `,
-                    className: 'custom-marker',
-                    iconSize: [24, 24],
-                    iconAnchor: [12, 24]
-                });
-
-                // Create marker
-                const marker = leaflet.marker([warehouse.latitude, warehouse.longitude], { icon })
-                    .addTo(map)
-                    .bindPopup(`
-                        <div style="min-width: 200px; padding: 8px;">
-                            <h3 style="font-weight: bold; font-size: 16px; margin: 0 0 4px 0;">${warehouse.district}</h3>
-                            <p style="color: #666; font-size: 14px; margin: 0 0 8px 0;">${warehouse.city}, ${warehouse.region}</p>
-                            <p style="font-size: 12px; font-weight: bold; margin: 0 0 4px 0;">Covered Areas:</p>
-                            <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px;">
-                                ${warehouse.covered_area.slice(0, 3).map(area =>
-                        `<span style="background: #f1f1f1; padding: 2px 6px; border-radius: 10px; font-size: 11px;">${area}</span>`
-                    ).join('')}
-                                ${warehouse.covered_area.length > 3 ?
-                            `<span style="background: #f1f1f1; padding: 2px 6px; border-radius: 10px; font-size: 11px;">+${warehouse.covered_area.length - 3} more</span>` : ''
-                        }
-                            </div>
-                            <p style="font-size: 12px; margin: 0 0 4px 0;">
-                                <strong>Phone:</strong> ${getContactNumber(warehouse.region)}
-                            </p>
-                            <span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold;">
-                                Active
-                            </span>
-                        </div>
-                    `);
-
-                // Add click handler
-                marker.on('click', () => {
-                    handleDistrictClick(warehouse);
-                });
-
-                newMarkers.push(marker);
-
-            } catch (error) {
-                console.error('Error creating marker:', error);
-            }
-        });
-
-        setMarkers(newMarkers);
-    }, [map, filteredWarehouses]);
-
-    // Handle district click
+    // ============ EVENT HANDLERS ============
     const handleDistrictClick = useCallback((warehouse) => {
-        setSelectedDistrict(selectedDistrict?.district === warehouse.district ? null : warehouse);
+        setSelectedDistrict(prev => prev?.district === warehouse.district ? null : warehouse);
 
+        const map = mapInstanceRef.current;
         if (map) {
-            map.flyTo([warehouse.latitude, warehouse.longitude], 12);
-        }
-    }, [map, selectedDistrict]);
+            map.flyTo([warehouse.latitude, warehouse.longitude], MARKER_ZOOM, {
+                duration: 1.5
+            });
 
-    // Clear selection
+            // Open popup for the clicked marker
+            const marker = markersRef.current.find(m =>
+                m.getLatLng().lat === warehouse.latitude &&
+                m.getLatLng().lng === warehouse.longitude
+            );
+            if (marker) {
+                marker.openPopup();
+            }
+        }
+    }, []);
+
     const clearSelection = useCallback(() => {
         setSelectedDistrict(null);
         setHoveredDistrict(null);
+
+        // Close any open popups
+        if (mapInstanceRef.current) {
+            mapInstanceRef.current.closePopup();
+        }
     }, []);
 
-    // Reset filters
     const resetFilters = useCallback(() => {
         setSearchTerm('');
         setSelectedRegion('All');
         clearSelection();
 
+        const map = mapInstanceRef.current;
         if (map) {
-            map.flyTo([23.6850, 90.3563], 7);
+            map.flyTo([BANGLADESH_CENTER.lat, BANGLADESH_CENTER.lng], DEFAULT_ZOOM, {
+                duration: 1.5
+            });
+            map.closePopup();
         }
-    }, [map, clearSelection]);
+    }, [clearSelection]);
 
-    // Find user location
     const findUserLocation = useCallback(() => {
         if (!navigator.geolocation) {
             alert('Geolocation is not supported by your browser.');
@@ -256,8 +329,35 @@ const Coverage = () => {
 
                 setUserLocation(userPos);
 
-                if (map) {
-                    map.flyTo([userPos.lat, userPos.lng], 14);
+                const map = mapInstanceRef.current;
+                if (map && window.L) {
+                    map.flyTo([userPos.lat, userPos.lng], 14, { duration: 2 });
+
+                    // Remove existing user marker
+                    if (userMarkerRef.current) {
+                        userMarkerRef.current.remove();
+                    }
+
+                    const userIcon = window.L.divIcon({
+                        html: `
+                            <div style="
+                                background: #4285F4;
+                                width: 20px;
+                                height: 20px;
+                                border-radius: 50%;
+                                border: 4px solid white;
+                                box-shadow: 0 0 0 2px #4285F4;
+                            "></div>
+                        `,
+                        className: 'user-location-marker',
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10]
+                    });
+
+                    userMarkerRef.current = window.L.marker([userPos.lat, userPos.lng], { icon: userIcon })
+                        .addTo(map)
+                        .bindPopup('Your location')
+                        .openPopup();
                 }
             },
             (error) => {
@@ -265,72 +365,115 @@ const Coverage = () => {
                 alert('Unable to retrieve your location. Please enable location services.');
             }
         );
-    }, [map]);
-
-    // Zoom in
-    const zoomIn = useCallback(() => {
-        if (map) {
-            map.zoomIn();
-        }
-    }, [map]);
-
-    // Zoom out
-    const zoomOut = useCallback(() => {
-        if (map) {
-            map.zoomOut();
-        }
-    }, [map]);
-
-    // Initialize map on component mount
-    useEffect(() => {
-        initMap();
-
-        // Load Leaflet JS dynamically if not loaded
-        if (typeof window.L === 'undefined') {
-            const script = document.createElement('script');
-            script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-            script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
-            script.crossOrigin = '';
-            script.onload = initMap;
-            document.head.appendChild(script);
-        }
-
-        return () => {
-            if (map) {
-                map.remove();
-            }
-        };
     }, []);
 
-    // Update markers when filtered warehouses change
+    const zoomIn = useCallback(() => {
+        mapInstanceRef.current?.zoomIn();
+    }, []);
+
+    const zoomOut = useCallback(() => {
+        mapInstanceRef.current?.zoomOut();
+    }, []);
+
+    const resetView = useCallback(() => {
+        mapInstanceRef.current?.flyTo(
+            [BANGLADESH_CENTER.lat, BANGLADESH_CENTER.lng],
+            DEFAULT_ZOOM,
+            { duration: 1.5 }
+        );
+        mapInstanceRef.current?.closePopup();
+        clearSelection();
+    }, [clearSelection]);
+
+    // ============ EFFECTS ============
+    // Load Leaflet and initialize map
     useEffect(() => {
-        if (map) {
+        if (leafletLoadedRef.current) return;
+
+        const loadLeaflet = async () => {
+            if (typeof window.L === 'undefined') {
+                // Load CSS
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+                document.head.appendChild(link);
+
+                // Load JS
+                await new Promise((resolve) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+                    script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+                    script.crossOrigin = '';
+                    script.onload = resolve;
+                    document.head.appendChild(script);
+                });
+            }
+
+            leafletLoadedRef.current = true;
+
+            // Small delay to ensure DOM is ready
+            setTimeout(initMap, 100);
+        };
+
+        loadLeaflet();
+
+        return () => {
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.remove();
+                mapInstanceRef.current = null;
+            }
+            if (mapRef.current) {
+                mapRef.current.innerHTML = '';
+            }
+            setMapReady(false);
+            leafletLoadedRef.current = false;
+        };
+    }, [initMap]);
+
+    // Update markers when data changes
+    useEffect(() => {
+        if (mapReady) {
             updateMarkers();
         }
-    }, [map, filteredWarehouses, updateMarkers]);
+    }, [mapReady, updateMarkers]);
 
-    // Center on selected district
+    // Center map on selected district and open popup
     useEffect(() => {
-        if (selectedDistrict && map) {
-            map.flyTo([selectedDistrict.latitude, selectedDistrict.longitude], 12);
-        }
-    }, [selectedDistrict, map]);
+        if (selectedDistrict && mapInstanceRef.current) {
+            mapInstanceRef.current.flyTo(
+                [selectedDistrict.latitude, selectedDistrict.longitude],
+                MARKER_ZOOM,
+                { duration: 1.5 }
+            );
 
+            // Find and open the corresponding marker's popup
+            const marker = markersRef.current.find(m =>
+                m.getLatLng().lat === selectedDistrict.latitude &&
+                m.getLatLng().lng === selectedDistrict.longitude
+            );
+            if (marker) {
+                setTimeout(() => {
+                    marker.openPopup();
+                }, 1500); // Open popup after flyTo completes
+            }
+        }
+    }, [selectedDistrict]);
+
+    // ============ RENDER ============
     return (
-        <div className={`min-h-screen bg-linear-to-br from-base-100 to-base-200 p-4 md:p-6 ${isMapFullscreen ? 'fixed inset-0 z-50' : ''}`}>
-            {/* Back button for fullscreen mode */}
+        <div className={`min-h-screen bg-gradient-to-br from-base-100 to-base-200 p-4 md:p-6 ${isMapFullscreen ? 'fixed inset-0 z-50 overflow-auto' : ''}`}>
             {isMapFullscreen && (
                 <button
                     onClick={() => setIsMapFullscreen(false)}
-                    className="absolute top-4 right-4 z-1000 btn btn-primary btn-sm"
+                    className="fixed top-4 right-4 z-[1000] btn btn-primary btn-sm shadow-lg"
                 >
-                    <FaCompress className="mr-1" />
+                    <FaCompress className="mr-2" />
                     Exit Fullscreen
                 </button>
             )}
 
             <div className="max-w-7xl mx-auto">
-                {/* Header Section */}
+                {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -352,20 +495,17 @@ const Coverage = () => {
                     className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
                 >
                     {Object.entries(districtStats).map(([key, value]) => (
-                        <div key={key} className="card bg-base-100 shadow-lg border border-base-300 hover:shadow-xl transition-shadow">
-                            <div className="card-body p-4 text-center">
-                                <div className="text-3xl font-bold text-primary">{value}</div>
-                                <div className="text-sm font-semibold text-base-content/70 capitalize">
-                                    {key === 'coverage' ? 'National Coverage' : key}
-                                </div>
-                            </div>
-                        </div>
+                        <StatCard
+                            key={key}
+                            label={key === 'coverage' ? 'National Coverage' : key}
+                            value={value}
+                        />
                     ))}
                 </motion.div>
 
                 {/* Main Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                    {/* Left Panel - Search and Filters */}
+                    {/* Left Panel */}
                     <div className="lg:col-span-1 space-y-6">
                         {/* Search Box */}
                         <div className="card bg-base-100 shadow-lg border border-base-300">
@@ -378,6 +518,7 @@ const Coverage = () => {
                                     <button
                                         onClick={resetFilters}
                                         className="btn btn-xs btn-ghost"
+                                        aria-label="Clear all filters"
                                     >
                                         Clear All
                                     </button>
@@ -389,20 +530,21 @@ const Coverage = () => {
                                         className="input input-bordered w-full pl-10"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
+                                        aria-label="Search locations"
                                     />
                                     <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-base-content/50" />
                                 </div>
 
-                                {/* Results Count */}
                                 <div className="mt-4 flex items-center justify-between">
                                     <span className="text-sm text-base-content/70">
                                         Showing {filteredWarehouses.length} of {warehouses.length} districts
                                     </span>
                                     <button
                                         onClick={findUserLocation}
-                                        className="btn btn-xs btn-outline"
+                                        className="btn btn-xs btn-outline gap-1"
+                                        aria-label="Find nearby locations"
                                     >
-                                        <FaCrosshairs className="mr-1" />
+                                        <FaCrosshairs />
                                         Near Me
                                     </button>
                                 </div>
@@ -420,6 +562,7 @@ const Coverage = () => {
                                     <button
                                         onClick={() => setShowRegionDropdown(!showRegionDropdown)}
                                         className="btn btn-sm btn-ghost"
+                                        aria-label="Toggle region dropdown"
                                     >
                                         <FaChevronDown className={`transition-transform ${showRegionDropdown ? 'rotate-180' : ''}`} />
                                     </button>
@@ -429,6 +572,7 @@ const Coverage = () => {
                                     <button
                                         onClick={() => setSelectedRegion('All')}
                                         className={`btn btn-sm ${selectedRegion === 'All' ? 'btn-primary text-black' : 'btn-outline'}`}
+                                        aria-label="Show all regions"
                                     >
                                         All Regions
                                     </button>
@@ -451,6 +595,7 @@ const Coverage = () => {
                                                             setShowRegionDropdown(false);
                                                         }}
                                                         className={`btn btn-sm ${selectedRegion === region ? 'btn-primary text-black' : 'btn-outline'}`}
+                                                        aria-label={`Filter by ${region} region`}
                                                     >
                                                         {region}
                                                     </button>
@@ -480,6 +625,7 @@ const Coverage = () => {
                                             <button
                                                 onClick={resetFilters}
                                                 className="btn btn-link btn-sm mt-2"
+                                                aria-label="Reset filters"
                                             >
                                                 Reset filters
                                             </button>
@@ -492,11 +638,19 @@ const Coverage = () => {
                                                 onMouseEnter={() => setHoveredDistrict(warehouse)}
                                                 onMouseLeave={() => setHoveredDistrict(null)}
                                                 className={`p-3 mb-2 rounded-lg cursor-pointer transition-all duration-300 ${selectedDistrict?.district === warehouse.district
-                                                    ? 'bg-primary/20 border-l-4 border-primary scale-[1.02]'
-                                                    : hoveredDistrict?.district === warehouse.district
-                                                        ? 'bg-base-300 border-l-2 border-primary/50'
-                                                        : 'bg-base-200 hover:bg-base-300'
+                                                        ? 'bg-primary/20 border-l-4 border-primary scale-[1.02]'
+                                                        : hoveredDistrict?.district === warehouse.district
+                                                            ? 'bg-base-300 border-l-2 border-primary/50'
+                                                            : 'bg-base-200 hover:bg-base-300'
                                                     }`}
+                                                role="button"
+                                                tabIndex={0}
+                                                aria-label={`Select ${warehouse.district} district`}
+                                                onKeyPress={(e) => {
+                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                        handleDistrictClick(warehouse);
+                                                    }
+                                                }}
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <div>
@@ -509,21 +663,13 @@ const Coverage = () => {
                                                         <div
                                                             className="w-3 h-3 rounded-full"
                                                             style={{ backgroundColor: getRegionColor(warehouse.region) }}
-                                                        ></div>
+                                                            aria-label={`${warehouse.region} region color`}
+                                                        />
                                                         <FaMapMarkerAlt className="text-primary" />
                                                     </div>
                                                 </div>
                                                 <div className="mt-2 flex flex-wrap gap-1">
-                                                    {warehouse.covered_area.slice(0, 2).map(area => (
-                                                        <span key={area} className="badge badge-sm badge-outline">
-                                                            {area}
-                                                        </span>
-                                                    ))}
-                                                    {warehouse.covered_area.length > 2 && (
-                                                        <span className="badge badge-sm">
-                                                            +{warehouse.covered_area.length - 2} more
-                                                        </span>
-                                                    )}
+                                                    <AreaBadges areas={warehouse.covered_area} limit={2} />
                                                 </div>
                                                 <div className="mt-2 flex items-center gap-2 text-sm">
                                                     <FaPhone className="text-xs text-primary" />
@@ -537,7 +683,7 @@ const Coverage = () => {
                         </div>
                     </div>
 
-                    {/* Right Panel - Leaflet Map */}
+                    {/* Right Panel - Map */}
                     <div className="lg:col-span-2">
                         <div className="card bg-base-100 shadow-lg border border-base-300 h-full">
                             <div className="card-body p-4 h-full">
@@ -554,50 +700,52 @@ const Coverage = () => {
                                             <span className="text-sm text-base-content/70">Zoom: {zoom}x</span>
                                         </div>
                                         <button
-                                            onClick={() => {
-                                                if (map) {
-                                                    map.flyTo([23.6850, 90.3563], 7);
-                                                }
-                                            }}
+                                            onClick={resetView}
                                             className="btn btn-sm btn-outline"
+                                            aria-label="Reset map view"
                                         >
                                             Reset View
                                         </button>
                                         <button
                                             onClick={() => setIsMapFullscreen(!isMapFullscreen)}
                                             className="btn btn-sm btn-outline"
+                                            aria-label={isMapFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
                                         >
                                             {isMapFullscreen ? <FaCompress /> : <FaExpand />}
                                         </button>
                                     </div>
                                 </div>
 
-                                {/* Leaflet Map Container */}
+                                {/* Map Container */}
                                 <div className="relative rounded-lg overflow-hidden border border-base-300">
                                     <div
                                         ref={mapRef}
                                         style={{ height: '500px', width: '100%' }}
                                         className="leaflet-map"
+                                        aria-label="Interactive map showing warehouse locations"
                                     />
 
                                     {/* Map Controls */}
-                                    <div className="absolute top-4 right-4 flex flex-col gap-2">
+                                    <div className="absolute top-4 right-4 flex flex-col gap-2 z-[400]">
                                         <button
                                             onClick={zoomIn}
-                                            className="btn btn-circle btn-sm bg-base-100 hover:bg-base-200 border border-base-300"
+                                            className="btn btn-circle btn-sm bg-base-100 hover:bg-base-200 border border-base-300 shadow-md"
+                                            aria-label="Zoom in"
                                         >
                                             <FaPlus />
                                         </button>
                                         <button
                                             onClick={zoomOut}
-                                            className="btn btn-circle btn-sm bg-base-100 hover:bg-base-200 border border-base-300"
+                                            className="btn btn-circle btn-sm bg-base-100 hover:bg-base-200 border border-base-300 shadow-md"
+                                            aria-label="Zoom out"
                                         >
                                             <FaMinus />
                                         </button>
                                         <div className="h-px bg-base-300 my-1"></div>
                                         <button
                                             onClick={findUserLocation}
-                                            className="btn btn-circle btn-sm bg-base-100 hover:bg-base-200 border border-base-300"
+                                            className="btn btn-circle btn-sm bg-base-100 hover:bg-base-200 border border-base-300 shadow-md"
+                                            aria-label="Find my location"
                                             title="Find my location"
                                         >
                                             <FaLocationArrow />
@@ -605,7 +753,7 @@ const Coverage = () => {
                                     </div>
 
                                     {/* Coordinates Display */}
-                                    <div className="absolute bottom-4 left-4 bg-base-100/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg border border-base-300">
+                                    <div className="absolute bottom-4 left-4 bg-base-100/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg border border-base-300 z-[400]">
                                         <div className="text-xs font-mono">
                                             <div>Lat: {center.lat.toFixed(4)}</div>
                                             <div>Lng: {center.lng.toFixed(4)}</div>
@@ -614,7 +762,7 @@ const Coverage = () => {
                                     </div>
 
                                     {/* Filter Status */}
-                                    <div className="absolute top-4 left-4 bg-base-100/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg border border-base-300">
+                                    <div className="absolute top-4 left-4 bg-base-100/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg border border-base-300 z-[400] max-w-xs">
                                         <div className="text-sm">
                                             <div className="font-semibold">Active Filters:</div>
                                             <div className="flex flex-wrap gap-1 mt-1">
@@ -635,64 +783,8 @@ const Coverage = () => {
                                         </div>
                                     </div>
 
-                                    {/* Selected District Info Overlay */}
-                                    <AnimatePresence>
-                                        {selectedDistrict && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, y: 20 }}
-                                                className="absolute top-20 left-4 bg-base-100/95 backdrop-blur-sm p-4 rounded-lg shadow-xl max-w-xs border border-base-300"
-                                            >
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <div
-                                                                className="w-4 h-4 rounded-full"
-                                                                style={{ backgroundColor: getRegionColor(selectedDistrict.region) }}
-                                                            ></div>
-                                                            <h4 className="font-bold text-lg">{selectedDistrict.district}</h4>
-                                                        </div>
-                                                        <p className="text-sm text-base-content/70 mb-2">
-                                                            {selectedDistrict.city}, {selectedDistrict.region}
-                                                        </p>
-                                                        <div className="mb-3">
-                                                            <p className="text-sm font-semibold mb-1">Covered Areas:</p>
-                                                            <div className="flex flex-wrap gap-1">
-                                                                {selectedDistrict.covered_area.slice(0, 4).map(area => (
-                                                                    <span key={area} className="badge badge-sm">
-                                                                        {area}
-                                                                    </span>
-                                                                ))}
-                                                                {selectedDistrict.covered_area.length > 4 && (
-                                                                    <span className="badge badge-sm">
-                                                                        +{selectedDistrict.covered_area.length - 4} more
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <FaPhone className="text-sm text-primary" />
-                                                            <span className="text-sm font-semibold">{getContactNumber(selectedDistrict.region)}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <FaCheckCircle className="text-success" />
-                                                            <span className="text-sm font-semibold text-success">Active Branch</span>
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        onClick={clearSelection}
-                                                        className="btn btn-circle btn-xs btn-ghost ml-2"
-                                                    >
-                                                        <FaTimes />
-                                                    </button>
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-
                                     {/* Legend */}
-                                    <div className="absolute bottom-4 right-20 bg-base-100/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg border border-base-300">
+                                    <div className="absolute bottom-4 right-20 bg-base-100/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg border border-base-300 z-[400]">
                                         <div className="text-xs">
                                             <div className="font-semibold mb-1">Map Legend:</div>
                                             <div className="flex items-center gap-2 mb-1">
@@ -711,7 +803,7 @@ const Coverage = () => {
                                     </div>
                                 </div>
 
-                                {/* Map Instructions */}
+                                {/* Instructions */}
                                 <div className="mt-4">
                                     <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
                                         <div className="flex items-center gap-4">
@@ -750,35 +842,27 @@ const Coverage = () => {
                     <div className="card-body">
                         <h3 className="card-title text-lg mb-4">How to Use This Interactive Map</h3>
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div className="text-center">
-                                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                                    <FaSearch className="text-primary" />
+                            {[
+                                { icon: FaSearch, title: 'Search & Filter', desc: 'Type to search or filter by region to update map markers instantly' },
+                                { icon: FaLocationArrow, title: 'Find Location', desc: 'Click "Near Me" to find branches closest to your current location' },
+                                { icon: FaPlus, title: 'Zoom Controls', desc: 'Use +/- buttons to zoom in/out on the map', dualIcon: true },
+                                { icon: FaMapMarkerAlt, title: 'Interactive Markers', desc: 'Click on any marker to see branch details and contact information' }
+                            ].map((item, index) => (
+                                <div key={index} className="text-center">
+                                    <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        {item.dualIcon ? (
+                                            <>
+                                                <FaPlus className="text-primary" />
+                                                <FaMinus className="text-primary" />
+                                            </>
+                                        ) : (
+                                            <item.icon className="text-primary" />
+                                        )}
+                                    </div>
+                                    <h4 className="font-semibold mb-1">{item.title}</h4>
+                                    <p className="text-sm text-base-content/70">{item.desc}</p>
                                 </div>
-                                <h4 className="font-semibold mb-1">Search & Filter</h4>
-                                <p className="text-sm text-base-content/70">Type to search or filter by region to update map markers instantly</p>
-                            </div>
-                            <div className="text-center">
-                                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                                    <FaLocationArrow className="text-primary" />
-                                </div>
-                                <h4 className="font-semibold mb-1">Find Location</h4>
-                                <p className="text-sm text-base-content/70">Click "Near Me" to find branches closest to your current location</p>
-                            </div>
-                            <div className="text-center">
-                                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                                    <FaPlus className="text-primary" />
-                                    <FaMinus className="text-primary" />
-                                </div>
-                                <h4 className="font-semibold mb-1">Zoom Controls</h4>
-                                <p className="text-sm text-base-content/70">Use +/- buttons to zoom in/out on the map</p>
-                            </div>
-                            <div className="text-center">
-                                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                                    <FaMapMarkerAlt className="text-primary" />
-                                </div>
-                                <h4 className="font-semibold mb-1">Interactive Markers</h4>
-                                <p className="text-sm text-base-content/70">Click on any marker to see branch details and contact information</p>
-                            </div>
+                            ))}
                         </div>
                     </div>
                 </motion.div>

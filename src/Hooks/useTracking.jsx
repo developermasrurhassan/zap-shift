@@ -2,14 +2,14 @@
 import { useQuery } from '@tanstack/react-query';
 import useAuth from './useAuth';
 import useUserRole from './useUserRole';
-import UseAxios from './UseAxios';
-import UseAxiosSecure from './UseAxiosSecure';
+import useAxios from './useAxios';
+import useAxiosSecure from './useAxiosSecure';
 
 const useTracking = () => {
     const { user } = useAuth();
     const { isAdmin, isRider } = useUserRole();
-    const axios = UseAxios();
-    const axiosSecure = UseAxiosSecure();
+    const axios = useAxios();
+    const axiosSecure = useAxiosSecure();
 
     // Public tracking - no auth required
     const usePublicTracking = (trackingId) => {
@@ -19,8 +19,8 @@ const useTracking = () => {
                 if (!trackingId) return null;
                 try {
                     const res = await axios.get(`/track/${trackingId}`);
-                    if (!res.data.success) {
-                        throw new Error(res.data.message || 'Failed to fetch tracking data');
+                    if (!res?.data?.success) {
+                        throw new Error(res?.data?.message || 'Failed to fetch tracking data');
                     }
                     return res.data.data;
                 } catch (error) {
@@ -80,7 +80,7 @@ const useTracking = () => {
     // Admin tracking list - get all parcels with tracking info
     const useAdminTrackingList = (filters = {}) => {
         return useQuery({
-            queryKey: ['admin-tracking-list', filters],
+            queryKey: ['admin-tracking-list', filters.status, filters.search, filters.district],
             queryFn: async () => {
                 const params = new URLSearchParams();
 

@@ -21,12 +21,12 @@ import {
 import { motion } from 'motion/react';
 import Swal from 'sweetalert2';
 import useAuth from '../../../Hooks/useAuth';
-import UseAxiosSecure from '../../../Hooks/UseAxiosSecure';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 import Loading from '../../ErrorPage/Loading';
 
 const RiderDeliveries = () => {
     const { user } = useAuth();
-    const axiosSecure = UseAxiosSecure();
+    const axiosSecure = useAxiosSecure();
     const [filter, setFilter] = useState('all');
     const [search, setSearch] = useState('');
 
@@ -340,7 +340,7 @@ const RiderDeliveries = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white p-4 rounded-xl shadow-md">
                     <p className="text-sm text-gray-600">Total Assigned</p>
                     <p className="text-2xl font-bold text-gray-900">{deliveries.length}</p>

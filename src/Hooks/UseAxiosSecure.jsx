@@ -13,7 +13,7 @@ const axiosSecure = axios.create({
 });
 
 // Custom hook to use axiosSecure
-const UseAxiosSecure = () => {
+const useAxiosSecure = () => {
     const { user, logOut } = useAuth();
     const navigate = useNavigate();
     const interceptorSet = useRef(false);
@@ -114,7 +114,7 @@ const UseAxiosSecure = () => {
                             } catch (refreshError) {
                                 console.error('❌ Token refresh failed:', refreshError);
                                 await logOut();
-                                navigate('/signin');
+                                setTimeout(() => navigate('/signin'), 1000);
                             }
                         } else {
                             console.log('🚫 Already tried refresh, logging out');
@@ -156,9 +156,9 @@ const UseAxiosSecure = () => {
             axiosSecure.interceptors.response.eject(responseInterceptor);
             interceptorSet.current = false;
         };
-    }, [logOut, navigate, user]);
+    }, [user, logOut, navigate]);
 
     return axiosSecure;
 };
 
-export default UseAxiosSecure;
+export default useAxiosSecure;

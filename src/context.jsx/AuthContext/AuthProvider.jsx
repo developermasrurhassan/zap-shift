@@ -10,10 +10,13 @@ const AuthProvider = ({ children }) => {
 
     //social signin provider
     const googleProvider = new GoogleAuthProvider();
+    googleProvider.setCustomParameters({
+        prompt: "select_account",
+    });
     //signup user with email and password
-    const createUser = (email, password) => {
-        setLoading(true)
-        return createUserWithEmailAndPassword(auth, email, password);
+    const createUser = async (email, password) => {
+        setLoading(true);
+        return await createUserWithEmailAndPassword(auth, email, password);
     }
 
     //signin user with email and password
@@ -33,6 +36,7 @@ const AuthProvider = ({ children }) => {
 
     //logout
     const logOut = () => {
+        setLoading(true)
         return signOut(auth);
     }
 
@@ -55,14 +59,12 @@ const AuthProvider = ({ children }) => {
         signInUser,
         updateUserProfile,
         logOut,
-        names: 'masrur',
-        profession: 'web developer'
     };
 
     return (
-        <AuthContext value={authInfo}>
+        <AuthContext.Provider value={authInfo}>
             {children}
-        </AuthContext >
+        </AuthContext.Provider >
     );
 };
 

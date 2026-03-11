@@ -2,7 +2,7 @@ import { CardElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import UseAxiosSecure from '../../../Hooks/UseAxiosSecure';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 import Loading from '../../ErrorPage/Loading';
 import Swal from 'sweetalert2';
 
@@ -10,7 +10,7 @@ const PaymentForm = () => {
     const stripe = useStripe();
     const elements = useElements();
     const { parcelId } = useParams();
-    const axiosSecure = UseAxiosSecure();
+    const axiosSecure = useAxiosSecure();
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const [error, setError] = useState('');

@@ -176,9 +176,9 @@ const ErrorPage = () => {
                 <motion.div
                     animate={{
                         background: [
-                            `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, #1a1a1a, #000)`,
-                            `radial-gradient(circle at ${100 - mousePosition.x}% ${100 - mousePosition.y}%, #1a1a1a, #000)`,
-                            `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, #1a1a1a, #000)`
+                            `radial-linear(circle at ${mousePosition.x}% ${mousePosition.y}%, #1a1a1a, #000)`,
+                            `radial-linear(circle at ${100 - mousePosition.x}% ${100 - mousePosition.y}%, #1a1a1a, #000)`,
+                            `radial-linear(circle at ${mousePosition.x}% ${mousePosition.y}%, #1a1a1a, #000)`
                         ]
                     }}
                     transition={{
@@ -192,8 +192,8 @@ const ErrorPage = () => {
                 <div
                     className="absolute inset-0 opacity-20"
                     style={{
-                        backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-                                          linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+                        backgroundImage: `linear-linear(rgba(255,255,255,0.1) 1px, transparent 1px),
+                                          linear-linear(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
                         backgroundSize: '50px 50px'
                     }}
                 />
@@ -204,7 +204,7 @@ const ErrorPage = () => {
                         x: mousePosition.x * 2,
                         y: mousePosition.y * 2,
                     }}
-                    className="absolute w-[500px] h-[500px] bg-gradient-to-r from-primary/20 to-secondary/20 rounded-full blur-3xl"
+                    className="absolute w-125 h-125 bg-linear-to-r from-primary/20 to-secondary/20 rounded-full blur-3xl"
                     style={{
                         left: `${mousePosition.x}%`,
                         top: `${mousePosition.y}%`,
@@ -268,7 +268,7 @@ const ErrorPage = () => {
                                         return (
                                             <motion.div
                                                 key={i}
-                                                className={`absolute inset-0 bg-gradient-to-br ${colors[i]} rounded-3xl border-2 border-white/20`}
+                                                className={`absolute inset-0 bg-linear-to-br ${colors[i]} rounded-3xl border-2 border-white/20`}
                                                 style={{
                                                     transform: transforms[i],
                                                     boxShadow: "0 0 50px rgba(0,0,0,0.5)"
@@ -294,7 +294,7 @@ const ErrorPage = () => {
                                         duration: 2,
                                         repeat: Infinity
                                     }}
-                                    className={`absolute inset-0 bg-gradient-to-r ${details.color} rounded-full blur-3xl -z-10`}
+                                    className={`absolute inset-0 bg-linear-to-r ${details.color} rounded-full blur-3xl -z-10`}
                                 />
                             </div>
 
@@ -343,7 +343,7 @@ const ErrorPage = () => {
                                         duration: 0.2,
                                         repeat: Infinity
                                     }}
-                                    className={`text-9xl font-black bg-gradient-to-r ${details.color} bg-clip-text text-transparent`}
+                                    className={`text-9xl font-black bg-linear-to-r ${details.color} bg-clip-text text-transparent`}
                                 >
                                     {details.title}
                                 </motion.h1>
@@ -390,7 +390,7 @@ const ErrorPage = () => {
                                     <motion.button
                                         whileHover={{ scale: 1.05, y: -2 }}
                                         whileTap={{ scale: 0.95 }}
-                                        className={`group relative px-8 py-4 bg-gradient-to-r ${details.color} rounded-xl text-white font-semibold overflow-hidden`}
+                                        className={`group relative px-8 py-4 bg-linear-to-r ${details.color} rounded-xl text-white font-semibold overflow-hidden`}
                                     >
                                         <span className="relative z-10 flex items-center gap-2">
                                             <FaHome />
@@ -460,7 +460,7 @@ const ErrorPage = () => {
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-12 h-12 bg-gradient-to-r ${details.color} rounded-full flex items-center justify-center`}>
+                                        <div className={`w-12 h-12 bg-linear-to-r ${details.color} rounded-full flex items-center justify-center`}>
                                             <FaEnvelope className="text-white text-xl" />
                                         </div>
                                         <div>
@@ -496,7 +496,7 @@ const ErrorPage = () => {
                             initial={{ width: "100%" }}
                             animate={{ width: "0%" }}
                             transition={{ duration: 10, ease: "linear" }}
-                            className={`h-full bg-gradient-to-r ${details.color}`}
+                            className={`h-full bg-linear-to-r ${details.color}`}
                         />
                     </div>
                 </motion.div>

@@ -4,12 +4,12 @@ import { useNavigate } from 'react-router';
 import { toast } from 'react-hot-toast';
 import useAuth from './useAuth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import UseAxiosSecure from './UseAxiosSecure';
+import useAxiosSecure from './useAxiosSecure';
 
 const useRider = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const axiosSecure = UseAxiosSecure();
+    const axiosSecure = useAxiosSecure();
     const queryClient = useQueryClient();
 
     // Form states
@@ -41,25 +41,19 @@ const useRider = () => {
 
     // Load districts when region changes
     useEffect(() => {
-        const loadDistricts = async () => {
-            if (!selectedRegion) {
-                setDistricts([]);
-                return;
-            }
+        const loadWarehouses = async () => {
             try {
                 const response = await fetch('/warehouses.json');
                 const data = await response.json();
-                const filteredDistricts = data
-                    .filter(item => item.region === selectedRegion)
-                    .map(item => item.district);
-                const uniqueDistricts = [...new Set(filteredDistricts)];
-                setDistricts(uniqueDistricts.sort());
+                setRegions([...new Set(data.map(i => i.region))].sort());
+                setDistricts(selectedRegion
+                    ? [...new Set(data.filter(i => i.region === selectedRegion).map(i => i.district))].sort()
+                    : []);
             } catch (error) {
-                console.error('Error loading districts:', error);
-                setDistricts([]);
+                console.error(error);
             }
         };
-        loadDistricts();
+        loadWarehouses();
     }, [selectedRegion]);
 
     // Bike brands list
@@ -80,7 +74,7 @@ const useRider = () => {
         },
         onError: (error) => {
             console.error('Submission error:', error.response?.data);
-            const errorMsg = error.response?.data?.message || 'Failed to submit application';
+            const errorMsg = error?.response?.data?.message || error.message || 'Failed to submit application';
             setSubmissionError(errorMsg);
             toast.error(errorMsg);
         },
@@ -95,7 +89,7 @@ const useRider = () => {
                 const response = await axiosSecure.get(`/riders/my-application`);
                 return response.data?.data || null;
             },
-            enabled: !!user,
+            enabled: !!user?.uid,
             staleTime: 30000,
         });
     };

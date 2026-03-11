@@ -7,8 +7,8 @@ const axiosInstance = axios.create({
         'Content-Type': 'application/json'
     }
 })
-const UseAxios = () => {
+const useAxios = () => {
     return axiosInstance
 };
 
-export default UseAxios;
+export default useAxios;

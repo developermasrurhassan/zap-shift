@@ -1,3 +1,5 @@
+import { FaGlobeAsia } from "react-icons/fa";
+
 // src/components/Coverage/LeafletFallback.jsx
 const LeafletFallback = () => (
     <div className="h-125 flex flex-col items-center justify-center bg-base-200 rounded-lg">

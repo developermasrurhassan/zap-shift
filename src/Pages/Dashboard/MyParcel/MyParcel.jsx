@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import useAuth from '../../../Hooks/useAuth';
-import UseAxiosSecure from '../../../Hooks/UseAxiosSecure';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 import {
     FaBox,
     FaMoneyBill,
@@ -23,7 +23,7 @@ import { Link, useNavigate } from 'react-router';
 
 const MyParcel = () => {
     const { user } = useAuth();
-    const axiosSecure = UseAxiosSecure();
+    const axiosSecure = useAxiosSecure();
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const [processingPayment, setProcessingPayment] = useState(null);

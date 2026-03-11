@@ -25,7 +25,7 @@ import {
 import { districts } from './DistrictData';
 import Swal from 'sweetalert2';
 import useAuth from '../../Hooks/useAuth';
-import UseAxiosSecure from '../../Hooks/UseAxiosSecure';
+import useAxiosSecure from '../../Hooks/useAxiosSecure';
 
 const SendParcel = () => {
     // State management
@@ -34,7 +34,7 @@ const SendParcel = () => {
     const [currentStep, setCurrentStep] = useState(1);
     const [submittedData, setSubmittedData] = useState(null);
     const { user } = useAuth();
-    const axiosSecure = UseAxiosSecure();
+    const axiosSecure = useAxiosSecure();
     const navigate = useNavigate();
 
     // React Hook Form setup

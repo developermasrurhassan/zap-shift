@@ -14,18 +14,19 @@ import {
     FaUserCheck,
     FaUserClock
 } from 'react-icons/fa';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import UseAxiosSecure from '../../../Hooks/UseAxiosSecure';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 // import { useQuery } from '@tanstack/react-query';
 
 
 const AdminDashboardHome = () => {
-    const axiosSecure = UseAxiosSecure();
+    const axiosSecure = useAxiosSecure();
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const searchTimeoutRef = useRef(null);
+    const [loadingUserId, setLoadingUserId] = useState(null)
 
     // Debounce search input
     useEffect(() => {
@@ -61,7 +62,14 @@ const AdminDashboardHome = () => {
         queryKey: ['all-users', debouncedSearchTerm],
         queryFn: async () => {
             try {
-                const res = await axiosSecure.get(`/users?search=${debouncedSearchTerm}`);
+
+
+
+                const url = debouncedSearchTerm
+                    ? `/users?search=${debouncedSearchTerm}`
+                    : `/users`;
+
+                const res = await axiosSecure.get(url);
                 return res.data.data || [];
             } catch (error) {
                 console.error('Error fetching users:', error);
@@ -71,8 +79,8 @@ const AdminDashboardHome = () => {
                 return [];
             }
         },
-        staleTime: 10000,
-        cacheTime: 30000,
+        staleTime: 60000,
+        cacheTime: 300000
     });
 
     // Fetch system stats
@@ -116,24 +124,28 @@ const AdminDashboardHome = () => {
         },
     });
 
+
+
     const handleMakeAdmin = async (userId, userEmail) => {
         const result = await Swal.fire({
             title: 'Make Admin?',
             html: `<p class="text-gray-600">Are you sure you want to make <span class="font-semibold text-primary">${userEmail}</span> an admin?</p>
-             <p class="text-sm text-gray-500 mt-2">They will have full access to admin features.</p>`,
+        <p class="text-sm text-gray-500 mt-2">They will have full access to admin features.</p>`,
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#3b82f6',
             cancelButtonColor: '#6b7280',
             confirmButtonText: 'Yes, make admin',
-            cancelButtonText: 'Cancel',
-            background: '#fff',
-            backdrop: 'rgba(0,0,0,0.4)'
+            cancelButtonText: 'Cancel'
         });
 
-        if (result.isConfirmed) {
-            makeAdminMutation.mutate(userId);
-        }
+        if (!result.isConfirmed) return;
+
+        setLoadingUserId(userId);
+
+        makeAdminMutation.mutate(userId, {
+            onSettled: () => setLoadingUserId(null)
+        });
     };
 
     const clearSearch = () => {
@@ -192,7 +204,7 @@ const AdminDashboardHome = () => {
     return (
         <div className="space-y-6">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-2  lg:grid-cols-4 gap-4">
                 {statsCards.map((card, index) => (
                     <div
                         key={index}
@@ -231,7 +243,7 @@ const AdminDashboardHome = () => {
                         Refresh Data
                     </button>
                 </div>
-                <div className="h-64">
+                <div className="h-64 md:h-80">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={riderStatusData}>
                             <CartesianGrid strokeDasharray="3 3" />
@@ -239,7 +251,11 @@ const AdminDashboardHome = () => {
                             <YAxis />
                             <Tooltip />
                             <Legend />
-                            <Bar dataKey="value" fill="#3b82f6" />
+                            <Bar dataKey="value">
+                                {riderStatusData.map((entry, index) => (
+                                    <Cell key={index} fill={entry.color} />
+                                ))}
+                            </Bar>
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
@@ -267,9 +283,7 @@ const AdminDashboardHome = () => {
                         />
                         <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-2">
                             {isSearching && (
-                                <div className="px-2 py-1">
-                                    <FaSpinner className="animate-spin text-primary" />
-                                </div>
+                                <span className="loading loading-spinner loading-xs text-primary"></span>
                             )}
                             {searchTerm && (
                                 <button
@@ -299,7 +313,7 @@ const AdminDashboardHome = () => {
 
                 {/* Users Table - Fixed with proper spacing and responsiveness */}
                 <div className="overflow-x-auto">
-                    <table className="table table-xs md:table-sm w-full">
+                    <table className="table table-xs sm:table-sm md:table-md w-full">
                         <thead className="bg-gray-100">
                             <tr>
                                 <th className="px-2 py-3 text-base font-bold">#</th>
@@ -346,8 +360,8 @@ const AdminDashboardHome = () => {
                                                     </div>
                                                 )}
 
-                                                <span className="font-medium text-sm truncate max-w-25 sm:max-w-30">
-                                                    {user.name || 'N/A'}
+                                                <span className="font-medium text-sm truncate max-w-22.5 sm:max-w-37.5 lg:max-w-50">
+                                                    {user.displayName || user.name || 'N/A'}
                                                 </span>
                                             </div>
                                             {/* Email on mobile - shown below name */}
@@ -380,10 +394,10 @@ const AdminDashboardHome = () => {
                                             {user.role !== 'admin' && (
                                                 <button
                                                     onClick={() => handleMakeAdmin(user._id, user.email)}
-                                                    className="btn btn-primary text-black btn-sm whitespace-nowrap min-w-17.5"
-                                                    disabled={makeAdminMutation.isPending}
+                                                    className="btn btn-primary text-black btn-xs sm:btn-sm whitespace-nowrap"
+                                                    disabled={loadingUserId === user._id}
                                                 >
-                                                    {makeAdminMutation.isPending ? (
+                                                    {loadingUserId === user._id ? (
                                                         <span className="loading loading-spinner loading-xs"></span>
                                                     ) : (
                                                         'Make Admin'

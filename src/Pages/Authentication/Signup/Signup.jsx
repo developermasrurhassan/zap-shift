@@ -6,7 +6,7 @@ import SocialLogin from "../SocialLogin/SocialLogin";
 import { FaTimesCircle } from "react-icons/fa";
 import { FaEnvelope, FaEye, FaEyeSlash, FaLock, FaUser } from "react-icons/fa6";
 import axios from "axios";
-import UseAxios from "../../../Hooks/UseAxios";
+import useAxios from "../../../Hooks/useAxios";
 import { auth } from '../../../Pages/Authentication/firebase/firebase.init';
 
 const Signup = () => {
@@ -16,7 +16,7 @@ const Signup = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [signupError, setSignupError] = useState("");
     const [profilePic, setProfilePic] = useState("");
-    const axiosInstance = UseAxios();
+    const axiosInstance = useAxios();
     const navigate = useNavigate();
 
     const password = watch("password", "");

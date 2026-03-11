@@ -12,12 +12,12 @@ import {
     FaMotorcycle
 } from 'react-icons/fa';
 import useAuth from '../../../Hooks/useAuth';
-import UseAxiosSecure from '../../../Hooks/UseAxiosSecure';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 import Loading from '../../ErrorPage/Loading';
 
 const RiderDashboard = () => {
     const { user } = useAuth();
-    const axiosSecure = UseAxiosSecure();
+    const axiosSecure = useAxiosSecure();
 
     // Fetch rider's deliveries
     // Fetch rider's deliveries - using the correct endpoint
@@ -70,7 +70,7 @@ const RiderDashboard = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white rounded-xl shadow-md p-6">
                     <div className="flex items-center justify-between">
                         <div>

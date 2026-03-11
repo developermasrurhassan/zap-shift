@@ -50,7 +50,7 @@ const Signin = () => {
 
 
     return (
-        <div className="flex items-center justify-center p-4">
+        <div className="flex items-center justify-center p-4 md:p-8">
             <div className="card w-full max-w-md">
                 <div className="card-body">
                     {/* Header */}

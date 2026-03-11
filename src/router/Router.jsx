@@ -32,6 +32,9 @@ import UserTrackingView from "../Pages/Dashboard/UserTrackingView/UserTrackingVi
 import AdminTracking from "../Pages/Dashboard/AdminTrackingView/AdminTracking";
 import AdminTrackingView from "../Pages/Dashboard/AdminTrackingView/AdminTrackingView";
 import RiderTrackingView from "../Pages/Dashboard/RiderDashboard/RiderTrackingView";
+import About from "../Pages/About/About";
+import ServiceSection from "../Pages/Home/Services/ServiceSection";
+import Services from "../Pages/Services/Services";
 
 
 export const router = createBrowserRouter([
@@ -57,6 +60,8 @@ export const router = createBrowserRouter([
                 path: 'become-rider',
                 element: <PrivateRoutes><RiderForm /></PrivateRoutes>
             },
+            { path: 'about-us', Component: About },
+            { path: 'services', Component: Services },
         ],
     },
 
@@ -99,6 +104,7 @@ export const router = createBrowserRouter([
             { path: 'rider/rider-deliveries', element: <RiderRoute><RiderDeliveries /></RiderRoute> },
             { path: 'rider/my-earnings', element: <RiderRoute><RiderEarnings /></RiderRoute> },
             { path: 'rider/track/:parcelId', element: <RiderRoute><RiderTrackingView /></RiderRoute> },
+
         ],
     },
 

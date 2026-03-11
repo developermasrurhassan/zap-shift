@@ -22,11 +22,11 @@ import {
     FaSpinner
 } from 'react-icons/fa';
 import Swal from 'sweetalert2';
-import UseAxiosSecure from '../../../Hooks/UseAxiosSecure';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 import { districtsData, getUniqueDistricts } from '../../../../public/districts';
 
 const AdminParcelManagement = () => {
-    const axiosSecure = UseAxiosSecure();
+    const axiosSecure = useAxiosSecure();
     const [selectedParcel, setSelectedParcel] = useState(null);
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterDistrict, setFilterDistrict] = useState('all');

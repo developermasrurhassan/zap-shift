@@ -14,7 +14,7 @@ import {
     FaMoneyBillWave
 } from 'react-icons/fa';
 import useAuth from '../../../Hooks/useAuth';
-import UseAxiosSecure from '../../../Hooks/UseAxiosSecure';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 import useUserRole from '../../../Hooks/useUserRole';
 import Loading from '../../ErrorPage/Loading';
 
@@ -22,11 +22,11 @@ import Loading from '../../ErrorPage/Loading';
 const UserDashboardHome = () => {
     const { user } = useAuth();
     const { role, isLoading: roleLoading, isRider } = useUserRole(); // Add isRider
-    const axiosSecure = UseAxiosSecure();
+    const axiosSecure = useAxiosSecure();
 
     // Fetch user's parcels
     const { data: parcels = [], isLoading: parcelsLoading } = useQuery({
-        queryKey: ['user-parcels', user?.email],
+        queryKey: ['user-parcels', { email: user?.email }],
         queryFn: async () => {
             const res = await axiosSecure.get(`/parcels?email=${user?.email}`);
             return res.data.data || [];
@@ -69,7 +69,9 @@ const UserDashboardHome = () => {
     const cancelledParcels = parcels.filter(p => p.status === 'cancelled').length;
 
     const totalSpent = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-    const recentParcels = parcels.slice(0, 5);
+    const recentParcels = [...parcels]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 5);
 
     // Status badge component
     const StatusBadge = ({ status }) => {
@@ -107,7 +109,7 @@ const UserDashboardHome = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Total Parcels */}
                 <div className="bg-white rounded-xl shadow-md p-6">
                     <div className="flex items-center justify-between">
@@ -152,7 +154,10 @@ const UserDashboardHome = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm text-gray-600">Total Spent</p>
-                            <p className="text-2xl font-bold text-purple-600">${totalSpent.toFixed(2)}</p>
+                            <p className="text-2xl font-bold text-purple-600">${totalSpent.toLocaleString("en-US", {
+                                style: "currency",
+                                currency: "USD"
+                            })}</p>
                         </div>
                         <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 text-2xl">
                             <FaMoneyBillWave />
@@ -193,13 +198,15 @@ const UserDashboardHome = () => {
                                         recentParcels.map((parcel) => (
                                             <tr key={parcel._id} className="hover:bg-gray-50">
                                                 <td className="px-4 py-2 font-mono text-xs">
-                                                    {parcel.trackingId?.slice(-8)}
+                                                    {parcel.trackingId ? parcel.trackingId.slice(-8) : "N/A"}
                                                 </td>
                                                 <td className="px-4 py-2">
                                                     <div>
                                                         <p className="font-medium text-sm">{parcel.parcelName}</p>
                                                         <p className="text-xs text-gray-500 sm:hidden">
-                                                            {new Date(parcel.createdAt).toLocaleDateString()}
+                                                            {parcel.createdAt
+                                                                ? new Date(parcel.createdAt).toLocaleDateString()
+                                                                : "N/A"}
                                                         </p>
                                                     </div>
                                                 </td>
@@ -260,7 +267,9 @@ const UserDashboardHome = () => {
                                             }`}>{riderApplication.status}</span>
                                     </p>
                                     <p className="text-sm text-gray-600">
-                                        Applied on: {new Date(riderApplication.appliedAt).toLocaleDateString()}
+                                        Applied on: {riderApplication?.appliedAt
+                                            ? new Date(riderApplication.appliedAt).toLocaleDateString()
+                                            : "N/A"}
                                     </p>
                                     <Link to="/dashboard/my-application" className="text-sm text-primary hover:underline mt-1 inline-block">
                                         View Details →

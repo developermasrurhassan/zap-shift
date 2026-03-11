@@ -11,13 +11,13 @@ import {
 } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import useAuth from '../../../Hooks/useAuth';
-import UseAxiosSecure from '../../../Hooks/UseAxiosSecure';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 import Loading from '../../ErrorPage/Loading';
 
 
 const RiderEarnings = () => {
     const { user } = useAuth();
-    const axiosSecure = UseAxiosSecure();
+    const axiosSecure = useAxiosSecure();
     const [period, setPeriod] = useState('month');
 
     // Fetch earnings data
@@ -168,7 +168,7 @@ const RiderEarnings = () => {
                     <button
                         key={p}
                         onClick={() => setPeriod(p)}
-                        className={`btn btn-sm ${period === p ? 'btn-primary' : 'btn-ghost'}`}
+                        className={`btn btn-sm text-black ${period === p ? 'btn-primary' : 'btn-ghost'}`}
                     >
                         {p.charAt(0).toUpperCase() + p.slice(1)}
                     </button>
@@ -176,7 +176,7 @@ const RiderEarnings = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white p-6 rounded-xl shadow-md">
                     <p className="text-sm text-gray-600">Total Earnings</p>
                     <p className="text-2xl font-bold text-gray-900">${earnings.total || 0}</p>
@@ -224,7 +224,7 @@ const RiderEarnings = () => {
             </div>
 
             {/* Delivery Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-4">
                 <div className="bg-white p-6 rounded-xl shadow-md">
                     <p className="text-sm text-gray-600">Deliveries Completed</p>
                     <p className="text-2xl font-bold text-green-600">{earnings.deliveryCount || 0}</p>
@@ -268,8 +268,8 @@ const RiderEarnings = () => {
                                         <td>{new Date(tx.createdAt).toLocaleDateString()}</td>
                                         <td>
                                             <span className={`badge ${tx.type === 'earning' ? 'badge-success' :
-                                                    tx.type === 'withdrawal' ? 'badge-info' :
-                                                        'badge-ghost'
+                                                tx.type === 'withdrawal' ? 'badge-info' :
+                                                    'badge-ghost'
                                                 }`}>
                                                 {tx.type}
                                             </span>
@@ -280,8 +280,8 @@ const RiderEarnings = () => {
                                         </td>
                                         <td>
                                             <span className={`badge ${tx.status === 'completed' ? 'badge-success' :
-                                                    tx.status === 'pending' ? 'badge-warning' :
-                                                        'badge-error'
+                                                tx.status === 'pending' ? 'badge-warning' :
+                                                    'badge-error'
                                                 }`}>
                                                 {tx.status}
                                             </span>

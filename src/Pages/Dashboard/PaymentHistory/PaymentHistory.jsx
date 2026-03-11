@@ -3,13 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import { FaReceipt, FaCreditCard, FaCalendar, FaCheckCircle, FaTimesCircle, FaSpinner } from 'react-icons/fa';
 import { MdPayment } from 'react-icons/md';
 import useAuth from '../../../Hooks/useAuth';
-import UseAxiosSecure from '../../../Hooks/UseAxiosSecure';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 import { InlineLoading } from '../../ErrorPage/Loading';
 import Swal from 'sweetalert2';
 
 const PaymentHistory = () => {
     const { user } = useAuth();
-    const axiosSecure = UseAxiosSecure();
+    const axiosSecure = useAxiosSecure();
 
     const { data: paymentHistory, isLoading, error, refetch } = useQuery({
         queryKey: ['paymentHistory', user?.email],

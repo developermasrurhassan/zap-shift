@@ -3,14 +3,14 @@ import { FaGoogle } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'react-hot-toast';
 import useAuth from '../../../Hooks/useAuth';
-import UseAxios from '../../../Hooks/UseAxios';
+import useAxios from '../../../Hooks/useAxios';
 
 const SocialLogin = () => {
     const { signinWithGoogle } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
     const from = location.state?.from || "/dashboard";
-    const axiosInstance = UseAxios();
+    const axiosInstance = useAxios();
 
     const handleGoogleSignin = async () => {
         try {
