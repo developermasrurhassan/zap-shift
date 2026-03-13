@@ -304,7 +304,7 @@ const Services = () => {
                         transition={{ duration: 0.6 }}
                         className="text-center max-w-3xl mx-auto"
                     >
-                        <span className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-sm mb-6">
+                        <span className="inline-block px-4 py-2 rounded-full bg-primary/10 text-black font-semibold text-sm mb-6">
                             Our Services
                         </span>
                         <h1 className="text-5xl md:text-6xl font-bold mb-6">
@@ -338,8 +338,8 @@ const Services = () => {
                                 key={category.id}
                                 onClick={() => setActiveTab(category.id)}
                                 className={`btn btn-sm gap-2 ${activeTab === category.id
-                                        ? 'btn-primary'
-                                        : 'btn-ghost'
+                                    ? 'btn-primary text-black'
+                                    : 'btn-ghost'
                                     }`}
                             >
                                 <span>{category.icon}</span>
@@ -442,7 +442,7 @@ const Services = () => {
                             </ul>
 
                             <div className="flex gap-4">
-                                <button className="btn btn-primary flex-1">Get Started</button>
+                                <button className="btn btn-primary text-black flex-1">Get Started</button>
                                 <button className="btn btn-outline flex-1">Contact Sales</button>
                             </div>
                         </div>
@@ -577,39 +577,39 @@ const Services = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="flex items-center gap-2">
                                     <FaMapMarkerAlt className="text-primary" />
-                                    <span>New York</span>
+                                    <span>Dhaka</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <FaMapMarkerAlt className="text-primary" />
-                                    <span>Los Angeles</span>
+                                    <span>Narsingdhi</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <FaMapMarkerAlt className="text-primary" />
-                                    <span>Chicago</span>
+                                    <span>Sylet</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <FaMapMarkerAlt className="text-primary" />
-                                    <span>Houston</span>
+                                    <span>barishal</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <FaMapMarkerAlt className="text-primary" />
-                                    <span>Miami</span>
+                                    <span>Khulna</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <FaMapMarkerAlt className="text-primary" />
-                                    <span>Seattle</span>
+                                    <span>Rajshahi</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <FaMapMarkerAlt className="text-primary" />
-                                    <span>Denver</span>
+                                    <span>Rangpur</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <FaMapMarkerAlt className="text-primary" />
-                                    <span>Atlanta</span>
+                                    <span>Lakshmipur</span>
                                 </div>
                             </div>
 
-                            <button className="btn btn-primary mt-8 gap-2">
+                            <button className="btn text-black btn-primary mt-8 gap-2">
                                 View Full Coverage
                                 <FaArrowRight />
                             </button>
@@ -683,10 +683,10 @@ const Services = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                     >
-                        <h2 className="text-4xl font-bold text-primary-content mb-6">
+                        <h2 className="text-4xl font-bold text-black mb-6">
                             Ready to Start Shipping?
                         </h2>
-                        <p className="text-xl text-primary-content/90 mb-10">
+                        <p className="text-xl text-black/90 mb-10">
                             Join thousands of businesses that trust ZapShift for their logistics needs
                         </p>
 
@@ -695,12 +695,12 @@ const Services = () => {
                                 Create Account
                                 <FaArrowRight />
                             </button>
-                            <button className="btn btn-lg btn-outline text-primary-content border-primary-content hover:bg-primary-content/20">
+                            <button className="btn btn-lg btn-outline text-black border-black hover:bg-black/20">
                                 Contact Sales
                             </button>
                         </div>
 
-                        <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-primary-content/80">
+                        <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-black/80">
                             <span className="flex items-center gap-2">
                                 <FaCheckCircle /> No credit card required
                             </span>

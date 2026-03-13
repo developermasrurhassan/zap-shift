@@ -135,7 +135,7 @@ const About = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
                     >
-                        <span className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-sm mb-6">
+                        <span className="inline-block px-4 py-2 rounded-full bg-primary/10 text-black font-semibold text-sm mb-6">
                             Welcome to ZapShift
                         </span>
                     </motion.div>
@@ -166,7 +166,7 @@ const About = () => {
                         transition={{ duration: 0.6, delay: 0.6 }}
                         className="flex flex-col sm:flex-row gap-4 justify-center"
                     >
-                        <button className="btn btn-primary btn-lg gap-2">
+                        <button className="btn btn-primary text-black btn-lg gap-2">
                             Start Shipping
                             <FaArrowRight />
                         </button>
@@ -188,7 +188,7 @@ const About = () => {
                     >
                         {stats.map((stat, index) => (
                             <div key={index} className="text-center">
-                                <div className="text-3xl md:text-4xl font-bold text-primary mb-2">
+                                <div className="text-3xl md:text-4xl font-bold text-black mb-2">
                                     {stat.value}
                                 </div>
                                 <div className="text-base-content/70">{stat.label}</div>
@@ -237,9 +237,9 @@ const About = () => {
                         >
                             <div className="card bg-primary text-primary-content">
                                 <div className="card-body">
-                                    <FaRocket className="text-3xl mb-2" />
-                                    <h3 className="font-bold">Fast Growth</h3>
-                                    <p className="text-sm">300% YoY</p>
+                                    <FaRocket className="text-black text-3xl mb-2" />
+                                    <h3 className="font-bold text-black">Fast Growth</h3>
+                                    <p className="text-sm text-black ">300% YoY</p>
                                 </div>
                             </div>
                             <div className="card bg-secondary text-secondary-content">
@@ -482,24 +482,24 @@ const About = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                     >
-                        <h2 className="text-4xl font-bold text-primary-content mb-6">
+                        <h2 className="text-4xl font-bold text-black-content mb-6">
                             Ready to Transform Your Shipping?
                         </h2>
-                        <p className="text-xl text-primary-content/90 mb-10">
+                        <p className="text-xl text-black-content/90 mb-10">
                             Join thousands of businesses that trust ZapShift for their logistics needs.
                         </p>
 
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <button className="btn btn-lg bg-base-100 text-primary hover:bg-base-200 gap-2">
+                            <button className="btn btn-lg bg-base-100 text-black hover:bg-base-200 gap-2">
                                 Get Started Now
                                 <FaArrowRight />
                             </button>
-                            <button className="btn btn-lg btn-outline text-primary-content border-primary-content hover:bg-primary-content/20">
+                            <button className="btn btn-lg btn-outline text-black-content border-black-content hover:bg-primary-content/20">
                                 Contact Sales
                             </button>
                         </div>
 
-                        <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-primary-content/80">
+                        <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-black-content/80">
                             <span className="flex items-center gap-2">
                                 <FaCheckCircle /> No credit card required
                             </span>
